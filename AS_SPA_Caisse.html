@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#B8902A"/>
+<title>AS SPA — Caisse</title>
+<style>
+:root{
+  --gold:#B8902A;--gold-light:#D4AF5A;--gold-pale:#F5EDD8;--gold-bg:#FBF7EF;
+  --cream:#FEFCF8;--brown:#5C3D1E;--brown-soft:#8B6340;--ink:#1A1208;
+  --gray:#7A7060;--border:#E8DECA;--red:#C0392B;--green:#27674A;
+  --green-pale:#E8F5EE;--blue:#2563EB;--blue-pale:#EFF6FF;
+  --purple:#7C3AED;--purple-pale:#F5F3FF;
+  --shadow:0 2px 12px rgba(184,144,42,.12);--radius:14px;
+  --font:'Georgia','Times New Roman',serif;--mono:'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--mono);background:var(--cream);color:var(--ink);min-height:100vh;overflow-x:hidden}
+button{cursor:pointer;font-family:var(--mono);border:none;outline:none}
+input,select,textarea{font-family:var(--mono);outline:none}
+
+/* ── ÉCRAN CONNEXION ─────────────────────────────────────── */
+#screen-login{
+  position:fixed;inset:0;background:var(--cream);
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;padding:24px;
+}
+.login-box{
+  background:#fff;border-radius:20px;padding:36px 28px;
+  max-width:380px;width:100%;
+  box-shadow:0 8px 40px rgba(184,144,42,.18);
+  border:1px solid var(--border);text-align:center;
+}
+.login-logo{
+  width:72px;height:72px;border-radius:50%;border:2.5px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--gold-pale);font-family:var(--font);
+  font-size:26px;font-weight:bold;color:var(--gold);margin:0 auto 16px;
+}
+.login-brand{font-family:var(--font);font-size:24px;color:var(--brown);margin-bottom:4px}
+.login-sub{font-size:12px;color:var(--gray);margin-bottom:28px;letter-spacing:.5px}
+.login-label{font-size:11px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;text-align:left;margin-bottom:5px}
+.login-select,.login-input{
+  width:100%;padding:12px 14px;border:1.5px solid var(--border);
+  border-radius:10px;font-size:15px;color:var(--ink);background:#fff;
+  margin-bottom:14px;transition:border-color .15s;
+}
+.login-select:focus,.login-input:focus{border-color:var(--gold)}
+.login-btn{
+  width:100%;padding:14px;border-radius:12px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  color:#fff;font-size:15px;font-weight:700;
+  box-shadow:0 4px 16px rgba(184,144,42,.35);
+  transition:opacity .2s;
+}
+.login-btn:active{opacity:.8}
+.login-error{font-size:12px;color:var(--red);margin-bottom:10px;display:none}
+
+/* Badges de rôle */
+.role-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  margin-left:8px;
+}
+.role-proprietaire{background:#FEF3C7;color:#92400E}
+.role-adjoint{background:var(--blue-pale);color:var(--blue)}
+.role-caissier{background:var(--green-pale);color:var(--green)}
+
+/* ── HEADER ──────────────────────────────────────────────── */
+.header{
+  background:#fff;border-bottom:2px solid var(--gold);
+  padding:10px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;box-shadow:var(--shadow);gap:10px;
+}
+.header-logo{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.logo-circle{
+  width:42px;height:42px;border-radius:50%;border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--gold-pale);font-family:var(--font);
+  font-size:16px;font-weight:bold;color:var(--gold);letter-spacing:1px;
+}
+.header-title{font-family:var(--font);font-size:18px;color:var(--brown)}
+.header-title span{font-size:10px;color:var(--gray);display:block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px}
+.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.header-time{font-size:11px;color:var(--gray);text-align:right;line-height:1.4}
+.btn-logout{
+  padding:7px 12px;border-radius:20px;border:1.5px solid var(--border);
+  background:#fff;font-size:11px;color:var(--gray);font-weight:700;
+}
+.btn-logout:active{background:var(--gold-pale)}
+
+/* ── NAV ─────────────────────────────────────────────────── */
+.nav{display:flex;background:#fff;border-bottom:1px solid var(--border);padding:0 12px;gap:2px;overflow-x:auto}
+.nav-btn{
+  padding:11px 16px;border:none;background:none;
+  color:var(--gray);font-size:12px;font-weight:600;letter-spacing:.3px;
+  border-bottom:3px solid transparent;white-space:nowrap;transition:all .2s;
+}
+.nav-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.nav-btn:active{opacity:.7}
+
+/* ── VIEWS ───────────────────────────────────────────────── */
+.view{display:none;padding:14px;max-width:920px;margin:0 auto}
+.view.active{display:block}
+
+/* ── CARDS ───────────────────────────────────────────────── */
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card-title{font-family:var(--font);font-size:14px;color:var(--brown);margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0}
+
+/* ── CATALOGUE ───────────────────────────────────────────── */
+.cat-tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.cat-tab{padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;color:var(--gray);font-weight:600;transition:all .18s}
+.cat-tab.active,.cat-tab:active{background:var(--gold);border-color:var(--gold);color:#fff}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:9px}
+.svc-btn{padding:11px 9px;border-radius:10px;border:1.5px solid var(--border);background:#fff;text-align:left;transition:all .18s;position:relative;display:flex;flex-direction:column;gap:3px}
+.svc-btn:active,.svc-btn.added{background:var(--gold-pale);border-color:var(--gold)}
+.svc-name{font-size:11px;color:var(--ink);font-weight:600;line-height:1.3}
+.svc-price{font-size:12px;color:var(--gold);font-weight:700}
+.svc-badge{position:absolute;top:5px;right:7px;background:var(--gold);color:#fff;border-radius:10px;font-size:10px;padding:1px 6px;font-weight:700;display:none}
+.svc-btn.added .svc-badge{display:block}
+
+/* ── PANIER ──────────────────────────────────────────────── */
+.panier-empty{text-align:center;padding:20px 0;color:var(--gray);font-size:13px}
+.panier-item{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--border)}
+.panier-item:last-child{border-bottom:none}
+.pi-name{flex:1;font-size:12px;color:var(--ink);line-height:1.3}
+.pi-qty{display:flex;align-items:center;gap:5px}
+.qty-btn{width:25px;height:25px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:14px;color:var(--gold);font-weight:700;display:flex;align-items:center;justify-content:center}
+.qty-val{font-size:12px;font-weight:700;min-width:16px;text-align:center}
+.pi-price{font-size:12px;color:var(--brown);font-weight:700;min-width:70px;text-align:right}
+.pi-del{width:25px;height:25px;border-radius:50%;background:var(--gold-pale);border:none;color:var(--red);font-size:13px;display:flex;align-items:center;justify-content:center}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0 4px;border-top:2px solid var(--gold);margin-top:4px}
+.total-label{font-family:var(--font);font-size:14px;color:var(--brown)}
+.total-amount{font-family:var(--font);font-size:22px;color:var(--gold);font-weight:bold}
+
+/* ── FORM ────────────────────────────────────────────────── */
+.form-row{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.form-group{flex:1;min-width:130px}
+.form-group label{font-size:11px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+.form-group input,.form-group select{width:100%;padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;color:var(--ink);background:#fff;transition:border-color .15s}
+.form-group input:focus,.form-group select:focus{border-color:var(--gold)}
+.payment-methods{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.pay-btn{flex:1;min-width:75px;padding:9px 7px;border-radius:9px;border:1.5px solid var(--border);background:#fff;font-size:11px;font-weight:700;color:var(--gray);transition:all .15s}
+.pay-btn.active{background:var(--gold-pale);border-color:var(--gold);color:var(--brown)}
+
+/* ── BTN PRIMARY ─────────────────────────────────────────── */
+.btn-primary{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;box-shadow:0 4px 16px rgba(184,144,42,.35);transition:opacity .2s;margin-top:8px}
+.btn-primary:active{opacity:.8}
+.btn-primary:disabled{opacity:.4;cursor:default}
+
+/* ── REÇU MODAL ──────────────────────────────────────────── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);padding:22px;max-width:370px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.recu-header{text-align:center;margin-bottom:14px}
+.recu-logo{font-family:var(--font);font-size:26px;color:var(--gold);font-weight:bold;letter-spacing:2px}
+.recu-sub{font-size:10px;color:var(--gray);letter-spacing:1px}
+.recu-divider{border:none;border-top:1px dashed var(--border);margin:10px 0}
+.recu-line{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.recu-line .name{color:var(--gray)}.recu-line .val{font-weight:600;color:var(--ink)}
+.recu-total{display:flex;justify-content:space-between;font-family:var(--font);font-size:15px;font-weight:bold;color:var(--gold);padding-top:9px;border-top:2px solid var(--gold);margin-top:4px}
+.recu-items{margin:9px 0}
+.recu-item{display:flex;justify-content:space-between;font-size:11px;padding:3px 0}
+.recu-item .i-name{color:var(--ink)}.recu-item .i-price{color:var(--brown);font-weight:600}
+.recu-thanks{text-align:center;margin-top:14px;font-size:11px;color:var(--gray);font-style:italic}
+.modal-actions{display:flex;gap:9px;margin-top:14px}
+.btn-sec{flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:700;color:var(--gray)}
+.btn-gold{flex:1;padding:11px;border-radius:10px;background:var(--gold);border:none;font-size:12px;font-weight:700;color:#fff}
+
+/* ── DASHBOARD ───────────────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:12px;border:1px solid var(--border);padding:14px;box-shadow:var(--shadow)}
+.stat-label{font-size:10px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.stat-val{font-family:var(--font);font-size:20px;color:var(--gold);font-weight:bold}
+.stat-sub{font-size:10px;color:var(--gray);margin-top:2px}
+.dash-filters{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.filt-btn{padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:11px;color:var(--gray);font-weight:600}
+.filt-btn.active{background:var(--gold);border-color:var(--gold);color:#fff}
+.tx-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
+.tx-row:last-child{border-bottom:none}
+.tx-num{font-size:10px;color:var(--gray);font-weight:700}
+.tx-client{font-size:12px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-services{font-size:10px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-caissier{font-size:10px;color:var(--blue);font-weight:600}
+.tx-amount{font-size:13px;color:var(--brown);font-weight:700;text-align:right;white-space:nowrap}
+.tx-badge{font-size:10px;padding:3px 7px;border-radius:10px;font-weight:700;background:var(--green-pale);color:var(--green);white-space:nowrap}
+.top-svc{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.top-svc:last-child{border-bottom:none}
+.top-rank{width:22px;height:22px;border-radius:50%;background:var(--gold-pale);font-size:10px;font-weight:700;color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.top-svc-name{flex:1;font-size:11px;color:var(--ink)}
+.top-svc-cnt{font-size:11px;color:var(--gray);font-weight:600}
+.top-svc-rev{font-size:11px;color:var(--brown);font-weight:700;text-align:right}
+
+/* ── GESTION ─────────────────────────────────────────────── */
+.user-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.user-card{background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;box-shadow:var(--shadow)}
+.user-card-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.user-name{font-size:14px;font-weight:700;color:var(--ink)}
+.user-role-text{font-size:11px;color:var(--gray)}
+.user-actions{display:flex;gap:7px;margin-top:10px}
+.btn-sm{padding:7px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid var(--border);background:#fff;color:var(--gray)}
+.btn-sm-red{padding:7px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid #FCA5A5;background:#FEF2F2;color:var(--red)}
+.btn-sm-gold{padding:7px 12px;border-radius:8px;font-size:11px;font-weight:700;border:1.5px solid var(--gold);background:var(--gold-pale);color:var(--brown)}
+.section-add{background:var(--gold-bg);border:1.5px dashed var(--gold);border-radius:12px;padding:16px;margin-bottom:14px}
+.section-add-title{font-size:13px;font-weight:700;color:var(--brown);margin-bottom:12px}
+
+/* ── MODAL GÉNÉRIQUE ─────────────────────────────────────── */
+.modal-title{font-family:var(--font);font-size:17px;color:var(--brown);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:11px 22px;border-radius:30px;font-size:12px;font-weight:600;z-index:600;transition:transform .3s ease;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:480px){
+  .services-grid{grid-template-columns:repeat(2,1fr)}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ ÉCRAN CONNEXION ══════════════════════════════════════ -->
+<div id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">AS</div>
+    <div class="login-brand">AS SPA</div>
+    <div class="login-sub">— Institut de beauté — Connexion</div>
+    <label class="login-label">Profil</label>
+    <select class="login-select" id="login-profil">
+      <option value="">— Choisir un profil —</option>
+    </select>
+    <label class="login-label">Code PIN</label>
+    <input class="login-input" type="password" id="login-pin" placeholder="• • • •" maxlength="6" inputmode="numeric"/>
+    <div class="login-error" id="login-error">Code incorrect. Réessayez.</div>
+    <button class="login-btn" onclick="doLogin()">Connexion</button>
+  </div>
+</div>
+
+<!-- ══ APP ══════════════════════════════════════════════════ -->
+<div id="app" style="display:none">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <div class="logo-circle">AS</div>
+    <div class="header-title">AS SPA<span id="header-sub">— Institut de beauté —</span></div>
+  </div>
+  <div class="header-right">
+    <div class="header-time" id="header-time"></div>
+    <div id="header-badge"></div>
+    <button class="btn-logout" onclick="doLogout()">Déco.</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav" id="main-nav">
+  <button class="nav-btn active" onclick="showView('caisse',this)">Caisse</button>
+  <button class="nav-btn" id="nav-dashboard" onclick="showView('dashboard',this)">Dashboard</button>
+  <button class="nav-btn" id="nav-gestion" onclick="showView('gestion',this)">Gestion</button>
+</div>
+
+<!-- ══ VUE CAISSE ══════════════════════════════════════════ -->
+<div class="view active" id="view-caisse">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Choisir les services</div>
+    <div class="cat-tabs" id="cat-tabs"></div>
+    <div class="services-grid" id="services-grid"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Panier <span id="panier-count" style="margin-left:auto;font-size:11px;color:var(--gray)"></span></div>
+    <div id="panier-list"><div class="panier-empty">Aucun service sélectionné</div></div>
+    <div class="total-row">
+      <span class="total-label">Total</span>
+      <span class="total-amount" id="total-display">0 GNF</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Client &amp; Paiement</div>
+    <div class="form-row">
+      <div class="form-group"><label>Nom client</label><input type="text" id="client-nom" placeholder="Optionnel" autocomplete="off"/></div>
+      <div class="form-group"><label>Téléphone</label><input type="tel" id="client-tel" placeholder="Optionnel" autocomplete="off"/></div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Mode de paiement</label>
+      <div class="payment-methods">
+        <button class="pay-btn active" onclick="selectPay(this,'Espèces')">Espèces</button>
+        <button class="pay-btn" onclick="selectPay(this,'Orange Money')">Orange Money</button>
+        <button class="pay-btn" onclick="selectPay(this,'Wave')">Wave</button>
+        <button class="pay-btn" onclick="selectPay(this,'Carte')">Carte</button>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Note</label>
+      <input type="text" id="tx-note" placeholder="Remise, remarque..." autocomplete="off"/>
+    </div>
+    <button class="btn-primary" id="btn-valider" onclick="validerTransaction()">✓ Enregistrer &amp; Générer le reçu</button>
+  </div>
+</div>
+
+<!-- ══ VUE DASHBOARD ═══════════════════════════════════════ -->
+<div class="view" id="view-dashboard">
+  <div class="dash-filters" id="dash-filters">
+    <button class="filt-btn active" onclick="setFilter('today',this)">Aujourd'hui</button>
+    <button class="filt-btn" onclick="setFilter('week',this)">Cette semaine</button>
+    <button class="filt-btn" onclick="setFilter('month',this)">Ce mois</button>
+    <button class="filt-btn" onclick="setFilter('all',this)">Tout</button>
+  </div>
+  <div class="stats-grid" id="stats-grid"></div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Top services</div>
+    <div id="top-services"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Transactions récentes</div>
+    <div id="tx-list"></div>
+    <div style="text-align:center;margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap" id="csv-btn-wrap">
+      <button onclick="exportCSV()" style="padding:8px 18px;border-radius:20px;border:1.5px solid var(--gold);background:var(--gold-pale);color:var(--brown);font-size:11px;font-weight:700">↓ Exporter CSV</button>
+      <button onclick="exportPDF()" style="padding:8px 18px;border-radius:20px;border:1.5px solid var(--gold);background:var(--gold);color:#fff;font-size:11px;font-weight:700">Exporter PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VUE GESTION ════════════════════════════════════════= -->
+<div class="view" id="view-gestion">
+
+  <!-- Gestion utilisateurs -->
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Utilisateurs &amp; PIN</div>
+    <div class="section-add" id="form-add-user">
+      <div class="section-add-title">Ajouter / modifier un utilisateur</div>
+      <div class="form-row">
+        <div class="form-group"><label>Nom</label><input type="text" id="new-user-name" placeholder="Ex: Aissatou" autocomplete="off"/></div>
+        <div class="form-group">
+          <label>Rôle</label>
+          <select id="new-user-role">
+            <option value="caissier">Caissier</option>
+            <option value="adjoint">Adjoint</option>
+            <option value="proprietaire">Propriétaire</option>
+          </select>
+        </div>
+        <div class="form-group"><label>PIN (4–6 chiffres)</label><input type="password" id="new-user-pin" placeholder="••••" maxlength="6" inputmode="numeric" autocomplete="off"/></div>
+      </div>
+      <button class="btn-primary" style="margin-top:0" onclick="saveUser()">Enregistrer l'utilisateur</button>
+    </div>
+    <div class="user-grid" id="user-list"></div>
+  </div>
+
+  <!-- Zone danger propriétaire -->
+  <div class="card" id="zone-danger">
+    <div class="card-title"><span class="dot" style="background:var(--red)"></span>Zone administration</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button onclick="exportBackup()" style="padding:10px 16px;border-radius:10px;border:1.5px solid var(--blue);background:var(--blue-pale);color:var(--blue);font-size:12px;font-weight:700">Sauvegarder les données</button>
+      <button onclick="document.getElementById('import-file').click()" style="padding:10px 16px;border-radius:10px;border:1.5px solid var(--green);background:var(--green-pale);color:var(--green);font-size:12px;font-weight:700">Restaurer une sauvegarde</button>
+      <button onclick="confirmReset()" style="padding:10px 16px;border-radius:10px;border:1.5px solid #FCA5A5;background:#FEF2F2;color:var(--red);font-size:12px;font-weight:700">Réinitialiser toutes les données</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importBackup(event)"/>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- ══ REÇU MODAL ═══════════════════════════════════════════ -->
+<div class="overlay" id="overlay-recu">
+  <div class="modal" id="modal-recu"></div>
+</div>
+
+<!-- ══ CONFIRM MODAL ════════════════════════════════════════ -->
+<div class="overlay" id="overlay-confirm">
+  <div class="modal" style="max-width:320px">
+    <div class="modal-title" id="confirm-title">Confirmation</div>
+    <p style="font-size:13px;color:var(--gray);margin-bottom:20px" id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-sm-red" style="flex:1;padding:11px;border-radius:10px" id="confirm-ok">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CATALOGUE
+══════════════════════════════════════════════════════════════ */
+const CATALOGUE={
+  "Pédicure & Manucure":[
+    {id:"pm1",name:"Pédicure simple",price:100000},
+    {id:"pm2",name:"Manucure simple",price:70000},
+    {id:"pm3",name:"Manucure + Vernis gel",price:150000},
+    {id:"pm4",name:"Pédicure + Vernis gel",price:150000},
+    {id:"pm5",name:"Pédicure & Manucure",price:170000},
+    {id:"pm6",name:"Pédicure & Manucure + Vernis gel",price:250000},
+    {id:"pm7",name:"Pédicure & Manucure Enfants",price:100000},
+  ],
+  "Onglerie":[
+    {id:"on1",name:"Ongle capsule permanent",price:150000},
+    {id:"on2",name:"Ongle gel",price:250000},
+    {id:"on3",name:"Ongle gel French",price:300000},
+    {id:"on4",name:"Ongle gel Déco",price:350000},
+    {id:"on5",name:"Ongle résine permanent",price:250000},
+    {id:"on6",name:"Ongle résine French",price:300000},
+    {id:"on7",name:"Ongle résine Déco",price:350000},
+    {id:"on8",name:"Ongle dégradé",price:300000},
+    {id:"on9",name:"Ongle dégradé Déco",price:350000},
+    {id:"on10",name:"Gainage naturel",price:150000},
+    {id:"on11",name:"Gainage avec chablon",price:350000},
+    {id:"on12",name:"Remplissage ongle",price:200000},
+    {id:"on13",name:"Remplissage ongle French",price:250000},
+    {id:"on14",name:"Limage + vernis",price:100000},
+    {id:"on15",name:"Pose vernis gel mains",price:100000},
+    {id:"on16",name:"Pose vernis pieds",price:100000},
+    {id:"on17",name:"Dépose ongles",price:50000},
+    {id:"on18",name:"Dépose vernis",price:50000},
+  ],
+  "Épilation":[
+    {id:"ep1",name:"Sourcils",price:50000},
+    {id:"ep2",name:"Aisselles",price:80000},
+    {id:"ep3",name:"Demi-jambes",price:150000},
+    {id:"ep4",name:"Demi-bras",price:150000},
+    {id:"ep5",name:"Maillot complet",price:250000},
+    {id:"ep6",name:"Jambes complètes",price:200000},
+    {id:"ep7",name:"Bras complet",price:200000},
+    {id:"ep8",name:"Menton",price:70000},
+    {id:"ep9",name:"Lèvres",price:70000},
+    {id:"ep10",name:"Dos",price:200000},
+    {id:"ep11",name:"Ventre",price:100000},
+    {id:"ep12",name:"Fesses",price:200000},
+    {id:"ep13",name:"Visage complet",price:250000},
+    {id:"ep14",name:"Narine",price:50000},
+    {id:"ep15",name:"Poitrine",price:200000},
+  ],
+  "Soins visage":[
+    {id:"sv1",name:"Soin Visage Éclat",price:400000},
+    {id:"sv2",name:"Soin Hydra Facial",price:500000},
+    {id:"sv3",name:"Soin Anti-Âge",price:600000},
+    {id:"sv4",name:"Soin Express",price:200000},
+  ],
+  "Cils":[
+    {id:"ci1",name:"Cils Extension",price:300000},
+    {id:"ci2",name:"Cils Volume Riche",price:500000},
+    {id:"ci3",name:"Cils Volume Normal",price:400000},
+    {id:"ci4",name:"Cils Simple",price:150000},
+    {id:"ci5",name:"Cils Naturel",price:200000},
+    {id:"ci6",name:"Cils Direct",price:100000},
+  ],
+  "Massage":[
+    {id:"ma1a",name:"Massage Relaxant 30mn",price:250000},
+    {id:"ma1b",name:"Massage Relaxant 1h",price:400000},
+    {id:"ma2a",name:"Massage Thaïlande 30mn",price:300000},
+    {id:"ma2b",name:"Massage Thaïlande 1h",price:400000},
+    {id:"ma3a",name:"Massage Pierre chaude 30mn",price:300000},
+    {id:"ma3b",name:"Massage Pierre chaude 1h",price:450000},
+    {id:"ma4a",name:"Massage Tonifiant 30mn",price:250000},
+    {id:"ma4b",name:"Massage Tonifiant 1h",price:400000},
+    {id:"ma5a",name:"Massage du Dos 30mn",price:200000},
+    {id:"ma5b",name:"Massage du Dos 1h",price:300000},
+    {id:"ma6",name:"Massage des Pieds 1h",price:200000},
+  ],
+  "Hammam & Sauna":[
+    {id:"ha1",name:"Hammam",price:400000},
+    {id:"ha2",name:"Hammam Éclaircissant",price:750000},
+    {id:"ha3",name:"Hammam + Massage 1h",price:650000},
+    {id:"ha4",name:"Hammam + Massage 30mn",price:550000},
+    {id:"ha5",name:"Gants",price:100000},
+  ],
+};
+const CATS=Object.keys(CATALOGUE);
+
+/* ═══ ROLES ════════════════════════════════════════════════ */
+const ROLES={
+  proprietaire:{label:'Propriétaire',color:'#92400E',bg:'#FEF3C7',icon:'PROP',
+    canDash:true,canGestion:true,canExport:true,canReset:true},
+  adjoint:{label:'Adjoint',color:'#2563EB',bg:'#EFF6FF',icon:'ADJ',
+    canDash:true,canGestion:false,canExport:true,canReset:false},
+  caissier:{label:'Caissier',color:'#27674A',bg:'#E8F5EE',icon:'CAIS',
+    canDash:false,canGestion:false,canExport:false,canReset:false},
+};
+
+/* ═══ STATE ════════════════════════════════════════════════ */
+let currentUser=null;
+let currentCat=CATS[0];
+let panier={};
+let currentPay='Espèces';
+let currentFilter='today';
+let editingUserId=null;
+
+/* ═══ DB ════════════════════════════════════════════════════ */
+let db;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const req=indexedDB.open('AsSpaDB',2);
+    req.onupgradeneeded=e=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains('transactions'))
+        d.createObjectStore('transactions',{keyPath:'id',autoIncrement:true});
+      if(!d.objectStoreNames.contains('meta'))
+        d.createObjectStore('meta',{keyPath:'key'});
+      if(!d.objectStoreNames.contains('users'))
+        d.createObjectStore('users',{keyPath:'id',autoIncrement:true});
+    };
+    req.onsuccess=e=>{db=e.target.result;res(db)};
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbPut(store,obj){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(store,'readwrite');
+    const req=tx.objectStore(store).put(obj);
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbGetAll(store){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(store,'readonly');
+    const req=tx.objectStore(store).getAll();
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbDelete(store,id){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(store,'readwrite');
+    const req=tx.objectStore(store).delete(id);
+    req.onsuccess=()=>res();req.onerror=()=>rej(req.error);
+  });
+}
+function dbClear(store){
+  return new Promise((res,rej)=>{
+    const tx=db.transaction(store,'readwrite');
+    const req=tx.objectStore(store).clear();
+    req.onsuccess=()=>res();req.onerror=()=>rej(req.error);
+  });
+}
+async function getNextNum(){
+  const tx=db.transaction('meta','readwrite');
+  const s=tx.objectStore('meta');
+  const req=s.get('counter');
+  return new Promise(res=>{
+    req.onsuccess=()=>{
+      const cur=(req.result?.val||0)+1;
+      s.put({key:'counter',val:cur});res(cur);
+    };
+    req.onerror=()=>res(1);
+  });
+}
+
+/* ═══ USERS ════════════════════════════════════════════════ */
+async function getUsers(){return await dbGetAll('users')}
+
+async function ensureDefaultUsers(){
+  const users=await getUsers();
+  if(users.length===0){
+    // Utilisateurs par défaut
+    await dbPut('users',{name:'Propriétaire',role:'proprietaire',pin:'1234'});
+    await dbPut('users',{name:'Adjoint',role:'adjoint',pin:'5678'});
+    await dbPut('users',{name:'Caissier',role:'caissier',pin:'0000'});
+  }
+}
+
+async function populateLoginSelect(){
+  const users=await getUsers();
+  const sel=document.getElementById('login-profil');
+  sel.innerHTML='<option value="">— Choisir un profil —</option>';
+  users.forEach(u=>{
+    const r=ROLES[u.role];
+    const opt=document.createElement('option');
+    opt.value=u.id;
+    opt.textContent=`${r.icon} ${u.name} (${r.label})`;
+    sel.appendChild(opt);
+  });
+}
+
+async function doLogin(){
+  const selId=parseInt(document.getElementById('login-profil').value);
+  const pin=document.getElementById('login-pin').value.trim();
+  const err=document.getElementById('login-error');
+  if(!selId){err.textContent='Choisissez un profil.';err.style.display='block';return;}
+  if(!pin){err.textContent='Entrez votre PIN.';err.style.display='block';return;}
+  const users=await getUsers();
+  const user=users.find(u=>u.id===selId&&u.pin===pin);
+  if(!user){err.textContent='PIN incorrect. Réessayez.';err.style.display='block';document.getElementById('login-pin').value='';return;}
+  err.style.display='none';
+  currentUser=user;
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('app').style.display='block';
+  applyRoleUI();
+  renderCatTabs();renderServices();renderPanier();
+  updateClock();setInterval(updateClock,30000);
+}
+
+function doLogout(){
+  currentUser=null;panier={};currentCat=CATS[0];currentPay='Espèces';
+  document.getElementById('screen-login').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-pin').value='';
+  document.getElementById('login-error').style.display='none';
+  populateLoginSelect();
+  showView('caisse',document.querySelector('.nav-btn'));
+}
+
+function applyRoleUI(){
+  const r=ROLES[currentUser.role];
+  // Badge header
+  document.getElementById('header-badge').innerHTML=
+    `<span class="role-badge" style="background:${r.bg};color:${r.color}">${r.icon} ${r.label}</span>`;
+  document.getElementById('header-sub').textContent=`— ${currentUser.name} —`;
+  // Nav visibility
+  document.getElementById('nav-dashboard').style.display=r.canDash?'':'none';
+  document.getElementById('nav-gestion').style.display=(currentUser.role==='proprietaire')?'':'none';
+}
+
+/* ═══ GESTION UTILISATEURS ══════════════════════════════════ */
+async function renderUserList(){
+  const users=await getUsers();
+  const el=document.getElementById('user-list');
+  el.innerHTML=users.map(u=>{
+    const r=ROLES[u.role];
+    const isSelf=u.id===currentUser.id;
+    const isOwner=u.role==='proprietaire';
+    const ownerCount=users.filter(x=>x.role==='proprietaire').length;
+    const canDelete=!isSelf&&!(isOwner&&ownerCount<=1);
+    return `
+    <div class="user-card">
+      <div class="user-card-header">
+        <div class="user-avatar" style="background:${r.bg};color:${r.color};font-size:11px">${r.icon}</div>
+        <div>
+          <div class="user-name">${u.name}${isSelf?' <span style="font-size:10px;color:var(--gray)">(vous)</span>':''}</div>
+          <div class="user-role-text">${r.label}</div>
+        </div>
+      </div>
+      <div class="user-actions">
+        <button class="btn-sm-gold" onclick="editUser(${u.id})">Modifier</button>
+        ${canDelete?`<button class="btn-sm-red" onclick="deleteUser(${u.id},'${u.name}')">Supprimer</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function saveUser(){
+  const name=document.getElementById('new-user-name').value.trim();
+  const role=document.getElementById('new-user-role').value;
+  const pin=document.getElementById('new-user-pin').value.trim();
+  if(!name){toast('⚠ Entrez un nom');return;}
+  if(pin.length<4){toast('⚠ PIN minimum 4 chiffres');return;}
+  if(!/^\d+$/.test(pin)){toast('⚠ PIN chiffres uniquement');return;}
+  const obj={name,role,pin};
+  if(editingUserId) obj.id=editingUserId;
+  await dbPut('users',obj);
+  document.getElementById('new-user-name').value='';
+  document.getElementById('new-user-pin').value='';
+  document.getElementById('new-user-role').value='caissier';
+  editingUserId=null;
+  document.querySelector('.section-add-title').textContent='Ajouter / modifier un utilisateur';
+  await renderUserList();
+  await populateLoginSelect();
+  toast('✓ Utilisateur enregistré');
+}
+
+async function editUser(id){
+  const users=await getUsers();
+  const u=users.find(x=>x.id===id);if(!u)return;
+  editingUserId=id;
+  document.getElementById('new-user-name').value=u.name;
+  document.getElementById('new-user-role').value=u.role;
+  document.getElementById('new-user-pin').value=u.pin;
+  document.querySelector('.section-add-title').textContent=`Modifier — ${u.name}`;
+  document.getElementById('form-add-user').scrollIntoView({behavior:'smooth'});
+}
+
+function deleteUser(id,name){
+  showConfirm(`Supprimer "${name}" ?`,'Cet utilisateur ne pourra plus se connecter.',async()=>{
+    await dbDelete('users',id);
+    await renderUserList();
+    await populateLoginSelect();
+    toast('✓ Utilisateur supprimé');
+  });
+}
+
+/* ═══ RESET & BACKUP ════════════════════════════════════════ */
+function confirmReset(){
+  showConfirm('Réinitialiser toutes les données ?','Toutes les transactions seront supprimées définitivement. Les utilisateurs seront conservés.',async()=>{
+    await dbClear('transactions');
+    await dbDelete('meta','counter');
+    toast('✓ Données réinitialisées');
+    renderDashboard();
+  });
+}
+
+async function exportBackup(){
+  const txs=await dbGetAll('transactions');
+  const users=await dbGetAll('users');
+  const blob=new Blob([JSON.stringify({txs,users,exportDate:new Date().toISOString()},null,2)],
+    {type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`ASSPA_backup_${today()}.json`;a.click();
+  URL.revokeObjectURL(url);
+  toast('✓ Sauvegarde exportée');
+}
+
+async function importBackup(e){
+  const file=e.target.files[0];if(!file)return;
+  const text=await file.text();
+  try{
+    const data=JSON.parse(text);
+    showConfirm('Restaurer la sauvegarde ?',
+      `Cela remplacera toutes les transactions par celles du ${new Date(data.exportDate).toLocaleDateString('fr-FR')}.`,
+      async()=>{
+        await dbClear('transactions');
+        for(const tx of data.txs){await dbPut('transactions',tx);}
+        if(data.users){
+          await dbClear('users');
+          for(const u of data.users){await dbPut('users',u);}
+          await populateLoginSelect();
+        }
+        toast('✓ Sauvegarde restaurée');
+        renderDashboard();
+      });
+  }catch{toast('⚠ Fichier invalide');}
+  e.target.value='';
+}
+
+/* ═══ HELPERS UI ════════════════════════════════════════════ */
+function fmt(n){return n.toLocaleString('fr-FR')+' GNF'}
+function fmtS(n){return n.toLocaleString('fr-FR')}
+function today(){return new Date().toISOString().slice(0,10)}
+function timeStr(){return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+function dateStr(){return new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}
+function toast(msg,dur=2200){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+function updateClock(){
+  document.getElementById('header-time').innerHTML=
+    `<strong style="font-size:13px;color:var(--brown)">${timeStr()}</strong><br><span>${dateStr()}</span>`;
+}
+
+function showView(v,btn){
+  const r=ROLES[currentUser?.role||'caissier'];
+  if(v==='dashboard'&&!r.canDash){toast('⚠ Accès refusé');return;}
+  if(v==='gestion'&&currentUser?.role!=='proprietaire'){toast('⚠ Accès réservé au Propriétaire');return;}
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(v==='dashboard') renderDashboard();
+  if(v==='gestion') renderUserList();
+}
+
+/* ═══ CONFIRM ═══════════════════════════════════════════════ */
+let confirmCallback=null;
+function showConfirm(title,msg,cb){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  confirmCallback=cb;
+  document.getElementById('overlay-confirm').classList.add('open');
+  document.getElementById('confirm-ok').onclick=()=>{closeConfirm();confirmCallback&&confirmCallback()};
+}
+function closeConfirm(){document.getElementById('overlay-confirm').classList.remove('open')}
+
+/* ═══ CATALOGUE ════════════════════════════════════════════ */
+function renderCatTabs(){
+  document.getElementById('cat-tabs').innerHTML=
+    CATS.map(c=>`<button class="cat-tab${c===currentCat?' active':''}" onclick="selectCat('${c}')">${c}</button>`).join('');
+}
+function selectCat(c){currentCat=c;renderCatTabs();renderServices()}
+function findService(id){
+  for(const cat of Object.values(CATALOGUE)){const f=cat.find(s=>s.id===id);if(f)return f;}return null;
+}
+function renderServices(){
+  document.getElementById('services-grid').innerHTML=
+    CATALOGUE[currentCat].map(s=>{
+      const qty=panier[s.id]?.qty||0;
+      return `<button class="svc-btn${qty>0?' added':''}" onclick="addService('${s.id}')">
+        <span class="svc-badge">${qty}</span>
+        <span class="svc-name">${s.name}</span>
+        <span class="svc-price">${fmtS(s.price)} GNF</span>
+      </button>`;
+    }).join('');
+}
+
+/* ═══ PANIER ════════════════════════════════════════════════ */
+function addService(id){
+  const svc=findService(id);if(!svc)return;
+  if(panier[id])panier[id].qty++;else panier[id]={name:svc.name,price:svc.price,qty:1};
+  renderServices();renderPanier();
+}
+function setQty(id,d){
+  if(!panier[id])return;
+  panier[id].qty+=d;
+  if(panier[id].qty<=0)delete panier[id];
+  renderServices();renderPanier();
+}
+function removeItem(id){delete panier[id];renderServices();renderPanier()}
+function totalPanier(){return Object.values(panier).reduce((s,i)=>s+i.price*i.qty,0)}
+function renderPanier(){
+  const items=Object.entries(panier);
+  document.getElementById('total-display').textContent=fmt(totalPanier());
+  document.getElementById('panier-count').textContent=items.length?`${items.length} service${items.length>1?'s':''}`:'' ;
+  document.getElementById('btn-valider').disabled=!items.length;
+  document.getElementById('panier-list').innerHTML=!items.length
+    ?'<div class="panier-empty">Aucun service sélectionné</div>'
+    :items.map(([id,item])=>`
+      <div class="panier-item">
+        <div class="pi-name">${item.name}</div>
+        <div class="pi-qty">
+          <button class="qty-btn" onclick="setQty('${id}',-1)">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-btn" onclick="setQty('${id}',1)">+</button>
+        </div>
+        <div class="pi-price">${fmtS(item.price*item.qty)} GNF</div>
+        <button class="pi-del" onclick="removeItem('${id}')">✕</button>
+      </div>`).join('');
+}
+function selectPay(btn,mode){
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');currentPay=mode;
+}
+
+/* ═══ TRANSACTION ═══════════════════════════════════════════ */
+async function validerTransaction(){
+  if(!Object.keys(panier).length){toast('⚠ Panier vide');return;}
+  const nom=document.getElementById('client-nom').value.trim()||'Cliente';
+  const tel=document.getElementById('client-tel').value.trim();
+  const note=document.getElementById('tx-note').value.trim();
+  const num=await getNextNum();
+  const items=Object.entries(panier).map(([id,i])=>({id,name:i.name,price:i.price,qty:i.qty}));
+  const tx={
+    num:`REC-${String(num).padStart(4,'0')}`,
+    date:new Date().toISOString(),
+    client:{nom,tel},
+    items,total:totalPanier(),
+    paiement:currentPay,note,
+    caissier:currentUser.name,
+    caissierRole:currentUser.role,
+  };
+  await dbPut('transactions',tx);
+  showRecu(tx);
+}
+
+function showRecu(tx){
+  const d=new Date(tx.date);
+  const dl=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  const tl=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('modal-recu').innerHTML=`
+    <div class="recu-header">
+      <div class="recu-logo">AS SPA</div>
+      <div class="recu-sub">— Institut de beauté —</div>
+      <div style="font-size:10px;color:var(--gray);margin-top:4px">
+        RATOMA, Carrefour Hôtel MARIADOR PALACE<br>
+        Tél : 623 606 098 / 610 463 182
+      </div>
+    </div>
+    <hr class="recu-divider"/>
+    <div class="recu-line"><span class="name">Reçu n°</span><span class="val">${tx.num}</span></div>
+    <div class="recu-line"><span class="name">Date</span><span class="val">${dl}</span></div>
+    <div class="recu-line"><span class="name">Heure</span><span class="val">${tl}</span></div>
+    <div class="recu-line"><span class="name">Cliente</span><span class="val">${tx.client.nom}${tx.client.tel?' — '+tx.client.tel:''}</span></div>
+    <div class="recu-line"><span class="name">Paiement</span><span class="val">${tx.paiement}</span></div>
+    <div class="recu-line"><span class="name">Encaissé par</span><span class="val">${tx.caissier}</span></div>
+    ${tx.note?`<div class="recu-line"><span class="name">Note</span><span class="val">${tx.note}</span></div>`:''}
+    <hr class="recu-divider"/>
+    <div class="recu-items">
+      ${tx.items.map(i=>`<div class="recu-item"><span class="i-name">${i.qty>1?i.qty+'× ':''}${i.name}</span><span class="i-price">${fmtS(i.price*i.qty)} GNF</span></div>`).join('')}
+    </div>
+    <hr class="recu-divider"/>
+    <div class="recu-total"><span>TOTAL</span><span>${fmt(tx.total)}</span></div>
+    <div class="recu-thanks">Merci de votre visite ✦ À bientôt</div>
+    <div class="modal-actions">
+      <button class="btn-sec" onclick="window.print()">🖨 Imprimer</button>
+      <button class="btn-gold" onclick="closeRecu()">✓ Terminer</button>
+    </div>`;
+  document.getElementById('overlay-recu').classList.add('open');
+}
+function closeRecu(){
+  document.getElementById('overlay-recu').classList.remove('open');
+  panier={};
+  ['client-nom','client-tel','tx-note'].forEach(id=>document.getElementById(id).value='');
+  renderServices();renderPanier();
+  toast('✓ Transaction enregistrée !');
+}
+
+/* ═══ DASHBOARD ═════════════════════════════════════════════ */
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderDashboard();
+}
+function filterTx(txs){
+  const now=new Date();
+  return txs.filter(tx=>{
+    const d=new Date(tx.date);
+    if(currentFilter==='today') return d.toDateString()===now.toDateString();
+    if(currentFilter==='week'){const wk=new Date(now);wk.setDate(now.getDate()-7);return d>=wk;}
+    if(currentFilter==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+async function renderDashboard(){
+  const all=await dbGetAll('transactions');
+  const txs=filterTx(all).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const ca=txs.reduce((s,t)=>s+t.total,0);
+  const avg=txs.length?Math.round(ca/txs.length):0;
+  const svcMap={};
+  txs.forEach(tx=>tx.items.forEach(i=>{
+    if(!svcMap[i.name])svcMap[i.name]={cnt:0,rev:0};
+    svcMap[i.name].cnt+=i.qty;svcMap[i.name].rev+=i.price*i.qty;
+  }));
+  const topSvcs=Object.entries(svcMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,7);
+
+  // CA par caissier
+  const caisMap={};
+  txs.forEach(tx=>{
+    const k=tx.caissier||'—';
+    if(!caisMap[k])caisMap[k]=0;
+    caisMap[k]+=tx.total;
+  });
+
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-val">${fmtS(ca)}</div><div class="stat-sub">GNF</div></div>
+    <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-val">${txs.length}</div><div class="stat-sub">reçus</div></div>
+    <div class="stat-card"><div class="stat-label">Panier moyen</div><div class="stat-val">${fmtS(avg)}</div><div class="stat-sub">GNF</div></div>
+    <div class="stat-card"><div class="stat-label">Prestations</div><div class="stat-val">${txs.reduce((s,t)=>s+t.items.reduce((x,i)=>x+i.qty,0),0)}</div><div class="stat-sub">vendues</div></div>
+    ${Object.entries(caisMap).map(([k,v])=>`<div class="stat-card"><div class="stat-label" style="color:var(--blue)">CA — ${k}</div><div class="stat-val" style="font-size:16px">${fmtS(v)}</div><div class="stat-sub">GNF</div></div>`).join('')}`;
+
+  document.getElementById('top-services').innerHTML=topSvcs.length
+    ?topSvcs.map(([name,d],i)=>`
+      <div class="top-svc">
+        <div class="top-rank">${i+1}</div>
+        <div class="top-svc-name">${name}</div>
+        <div class="top-svc-cnt">${d.cnt}×</div>
+        <div class="top-svc-rev">${fmtS(d.rev)} GNF</div>
+      </div>`).join('')
+    :'<div class="panier-empty">Aucune donnée</div>';
+
+  document.getElementById('tx-list').innerHTML=txs.length
+    ?txs.slice(0,40).map(tx=>{
+      const d=new Date(tx.date);
+      const dl=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'});
+      const tl=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="tx-row">
+        <div>
+          <div class="tx-num">${tx.num} · ${dl} ${tl}</div>
+          <div class="tx-client">${tx.client.nom}</div>
+          <div class="tx-services">${tx.items.map(i=>i.name).join(', ')}</div>
+          <div class="tx-caissier">${tx.caissier||'—'}</div>
+        </div>
+        <div class="tx-badge">${tx.paiement}</div>
+        <div class="tx-amount">${fmtS(tx.total)} GNF</div>
+      </div>`;}).join('')
+    :'<div class="panier-empty">Aucune transaction pour cette période</div>';
+
+  // Bouton export selon rôle
+  const r=ROLES[currentUser.role];
+  document.getElementById('csv-btn-wrap').style.display=r.canExport?'block':'none';
+}
+
+async function exportCSV(){
+  const all=await dbGetAll('transactions');
+  const txs=filterTx(all);
+  const rows=[['Reçu','Date','Heure','Cliente','Tel','Services','Total GNF','Paiement','Caissier','Note']];
+  txs.forEach(tx=>{
+    const d=new Date(tx.date);
+    rows.push([tx.num,d.toLocaleDateString('fr-FR'),d.toLocaleTimeString('fr-FR'),
+      tx.client.nom,tx.client.tel||'',
+      tx.items.map(i=>`${i.qty>1?i.qty+'x ':''}${i.name}`).join(' | '),
+      tx.total,tx.paiement,tx.caissier||'',tx.note||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`ASSPA_${today()}.csv`;a.click();
+  URL.revokeObjectURL(url);toast('✓ CSV exporté');
+}
+
+/* ═══ EXPORT PDF ════════════════════════════════════════════ */
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)){res();return;}
+    const s=document.createElement('script');
+    s.src=src;s.async=true;
+    s.onload=()=>res();
+    s.onerror=()=>rej(new Error('Échec du chargement : '+src));
+    document.head.appendChild(s);
+  });
+}
+
+async function exportPDF(){
+  const JSPDF_URL='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  const AUTOTABLE_URL='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+  toast('Génération du PDF…',4000);
+  // Chargement dynamique des librairies (jsPDF puis autotable) avant génération
+  try{
+    await loadScript(JSPDF_URL);
+    await loadScript(AUTOTABLE_URL);
+  }catch(err){
+    toast('⚠ Module PDF indisponible (vérifiez la connexion)');
+    return;
+  }
+
+  // Données de la période filtrée
+  const all=await dbGetAll('transactions');
+  const txs=filterTx(all).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const ca=txs.reduce((s,t)=>s+t.total,0);
+  const avg=txs.length?Math.round(ca/txs.length):0;
+  const nbPrest=txs.reduce((s,t)=>s+t.items.reduce((x,i)=>x+i.qty,0),0);
+
+  const svcMap={};
+  txs.forEach(tx=>tx.items.forEach(i=>{
+    if(!svcMap[i.name])svcMap[i.name]={cnt:0,rev:0};
+    svcMap[i.name].cnt+=i.qty;svcMap[i.name].rev+=i.price*i.qty;
+  }));
+  const topSvcs=Object.entries(svcMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,7);
+
+  const filterLabels={today:"Aujourd'hui",week:'Cette semaine',month:'Ce mois',all:'Tout'};
+  const periode=filterLabels[currentFilter]||'';
+
+  const { jsPDF }=window.jspdf;
+  const doc=new jsPDF({unit:'pt',format:'a4'});
+  const pageW=doc.internal.pageSize.getWidth();
+  const pageH=doc.internal.pageSize.getHeight();
+  const M=40;
+  const GOLD=[184,144,42], BROWN=[92,61,30], GRAY=[122,112,96], INK=[26,18,8], CREAM=[251,247,239];
+
+  // ── En-tête ──
+  doc.setFont('helvetica','bold');doc.setFontSize(24);doc.setTextColor(...GOLD);
+  doc.text('AS SPA',M,52);
+  doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(...BROWN);
+  doc.text('Institut de beauté',M,70);
+  doc.setFontSize(9);doc.setTextColor(...GRAY);
+  doc.text('Généré le '+dateStr()+' à '+timeStr(),pageW-M,46,{align:'right'});
+  doc.text('Période : '+periode,pageW-M,60,{align:'right'});
+  doc.setDrawColor(...GOLD);doc.setLineWidth(1.5);
+  doc.line(M,82,pageW-M,82);
+
+  // ── 4 stats ──
+  doc.autoTable({
+    startY:96,
+    margin:{left:M,right:M},
+    head:[["Chiffre d'affaires (GNF)",'Transactions','Panier moyen (GNF)','Prestations']],
+    body:[[fmtS(ca),String(txs.length),fmtS(avg),String(nbPrest)]],
+    theme:'grid',
+    styles:{halign:'center'},
+    headStyles:{fillColor:GOLD,textColor:255,fontStyle:'bold',fontSize:8},
+    bodyStyles:{fontSize:13,fontStyle:'bold',textColor:BROWN},
+  });
+
+  // ── Transactions ──
+  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...BROWN);
+  doc.text('Transactions',M,doc.lastAutoTable.finalY+24);
+  doc.autoTable({
+    startY:doc.lastAutoTable.finalY+32,
+    margin:{left:M,right:M},
+    head:[['Reçu','Date','Cliente','Services','Montant GNF','Paiement','Caissier']],
+    body:txs.map(tx=>{
+      const d=new Date(tx.date);
+      const dl=d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})
+        +' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      return [
+        tx.num, dl, tx.client.nom,
+        tx.items.map(i=>`${i.qty>1?i.qty+'x ':''}${i.name}`).join(', '),
+        fmtS(tx.total), tx.paiement, tx.caissier||'—',
+      ];
+    }),
+    theme:'striped',
+    headStyles:{fillColor:GOLD,textColor:255,fontStyle:'bold',fontSize:8},
+    bodyStyles:{fontSize:8,textColor:INK},
+    alternateRowStyles:{fillColor:CREAM},
+    columnStyles:{
+      0:{cellWidth:46},
+      1:{cellWidth:62},
+      2:{cellWidth:62},
+      4:{cellWidth:62,halign:'right'},
+      5:{cellWidth:55},
+      6:{cellWidth:55},
+    },
+  });
+
+  // ── Top 7 services ──
+  let topY=doc.lastAutoTable.finalY+24;
+  if(topY>pageH-130){doc.addPage();topY=60;}
+  doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...BROWN);
+  doc.text('Top 7 services',M,topY);
+  doc.autoTable({
+    startY:topY+8,
+    margin:{left:M,right:M},
+    head:[['#','Service','Quantité','Revenu GNF']],
+    body:topSvcs.length?topSvcs.map(([name,d],i)=>[String(i+1),name,d.cnt+'x',fmtS(d.rev)])
+                       :[['—','Aucune donnée','—','—']],
+    theme:'grid',
+    headStyles:{fillColor:GOLD,textColor:255,fontStyle:'bold',fontSize:8},
+    bodyStyles:{fontSize:9,textColor:INK},
+    columnStyles:{0:{cellWidth:28,halign:'center'},2:{halign:'center'},3:{halign:'right'}},
+  });
+
+  // ── Pied de page (toutes les pages) ──
+  const pages=doc.internal.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...GRAY);
+    doc.text('RATOMA, Carrefour Hôtel MARIADOR PALACE — Tél : 623 606 098',pageW/2,pageH-22,{align:'center'});
+    doc.text(p+' / '+pages,pageW-M,pageH-22,{align:'right'});
+  }
+
+  doc.save('ASSPA_rapport_'+today()+'.pdf');
+  toast('✓ PDF exporté');
+}
+
+/* ═══ INIT ══════════════════════════════════════════════════ */
+openDB().then(async()=>{
+  await ensureDefaultUsers();
+  await populateLoginSelect();
+});
+</script>
+</body>
+</html>
