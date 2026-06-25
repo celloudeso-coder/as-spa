@@ -10,6 +10,7 @@ propriétaire et une synchronisation Supabase sont disponibles en option.
 
 ## Contenu du dépôt
 
+- [`index.html`](index.html) — page d'accueil (liens Dashboard / Caisse), servie à la racine du site Vercel.
 - [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html) — caisse PWA autonome, 100% hors ligne (IndexedDB).
 - [`AS_SPA_Dashboard.html`](AS_SPA_Dashboard.html) — dashboard propriétaire (lecture Supabase), déployable Vercel / GitHub Pages.
 - [`supabase/migration_asspa.sql`](supabase/migration_asspa.sql) — schéma Supabase (table, index, RLS) + guide de création du projet.
@@ -108,6 +109,24 @@ Ouvrir [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html) dans un navigateur récent
 > [jspdf-autotable](https://cdnjs.com/libraries/jspdf-autotable) (3.8.2) depuis
 > le CDN cdnjs ; une connexion internet est nécessaire **uniquement** pour cet
 > export. Tout le reste fonctionne hors-ligne.
+
+## Déploiement (Vercel)
+
+Le dépôt est un **site statique** (aucune étape de build) déployé sur Vercel,
+branché sur la branche `main` (chaque `git push` redéploie automatiquement).
+
+- **En ligne** : <https://as-spa-flax.vercel.app>
+  - `/` → page d'accueil ([`index.html`](index.html))
+  - `/AS_SPA_Dashboard.html` → dashboard propriétaire
+  - `/AS_SPA_Caisse.html` → caisse (instance en ligne, données séparées du TPV)
+- **Réglages d'import Vercel** : preset `Other`, *Root Directory* `./`, **aucune**
+  commande de build, **aucune** variable d'environnement (l'URL + la clé
+  Supabase se saisissent dans l'interface, jamais dans Vercel ni dans Git).
+- La page d'accueil est servie via une vraie `index.html` (pas de `vercel.json` :
+  un rewrite `/` + `cleanUrls` provoquait un 404 à la racine).
+- Le **dashboard** a besoin du **HTTPS** (Vercel) pour le hachage SHA-256 du mot
+  de passe ; la **caisse du TPV** reste en local (`file://`, voir
+  [`LANCEMENT_SAGA.md`](LANCEMENT_SAGA.md)).
 
 ## Données
 

@@ -6,8 +6,9 @@ Windows, avec écran tactile, imprimante thermique 80 mm et tiroir-caisse RJ11.
 
 > L'application est un **fichier HTML unique autonome**. Aucune installation de
 > logiciel n'est requise, juste un navigateur **Chrome** ou **Edge** récent.
-> Seul l'export PDF nécessite internet ; la caisse, l'impression et le tiroir
-> fonctionnent hors-ligne.
+> La caisse, l'impression et le tiroir fonctionnent **hors-ligne** ; seuls
+> l'export PDF et la **synchronisation Supabase** (optionnelle, voir §8) utilisent
+> internet — et la sync rattrape automatiquement son retard dès le retour en ligne.
 
 ---
 
@@ -178,6 +179,40 @@ que l'application envoie automatiquement :
 | Le tiroir ne s'ouvre pas | Option pilote (4.3) + câble RJ11 + réglage *tiroir auto* |
 | Données disparues après mise à jour | Le fichier a changé de nom/dossier → revenir au chemin d'origine, puis restaurer la sauvegarde |
 | Sortir du plein écran | `Alt + F4` ou `Ctrl + W` |
+| Badge `● N non sync.` qui persiste | Vérifier la connexion internet + la config Supabase (§8) |
+| Dashboard en ligne vide | Même URL + clé publishable que la caisse ? Migration SQL exécutée ? |
+
+---
+
+## 8. Synchronisation Supabase & dashboard en ligne (optionnel)
+
+La caisse fonctionne parfaitement **sans** cette étape (tout reste local). Activer
+la synchronisation permet au **propriétaire de consulter les ventes à distance**
+via le dashboard en ligne, en temps réel.
+
+### 8.1 Connecter la caisse
+
+1. Caisse → **Gestion → Paramètres → Connexion Supabase**.
+2. Saisir l'**URL du projet** (`https://xxxx.supabase.co`) et la **clé publishable**
+   (`sb_publishable_…`).
+3. **Tester & Enregistrer** → le badge de l'en-tête passe à **✓ Sync**
+   (ou `● N non sync.` s'il reste des ventes à pousser).
+
+> Les ventes sont toujours enregistrées en local d'abord, puis poussées en
+> arrière-plan (toutes les 30 s, après chaque vente et au retour en ligne).
+> Laisser les champs **vides** = caisse 100% hors-ligne.
+
+### 8.2 Dashboard propriétaire (en ligne)
+
+- Adresse : **<https://as-spa-flax.vercel.app>** → bouton *Dashboard Propriétaire*
+  (ou directement `…/AS_SPA_Dashboard.html`).
+- **1er lancement** : définir un mot de passe, puis saisir la **même** URL + clé
+  publishable que la caisse.
+- KPIs, top 7 services, 50 dernières transactions, export CSV, mise à jour en
+  direct. Consultable depuis n'importe quel appareil (téléphone, PC).
+
+> ⚠ Ne jamais saisir la clé **secrète** (`sb_secret_…`) ni le mot de passe de la
+> base : seules l'URL et la clé **publishable** sont nécessaires.
 
 ---
 
