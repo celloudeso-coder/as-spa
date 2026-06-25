@@ -181,6 +181,8 @@ que l'application envoie automatiquement :
 | Sortir du plein écran | `Alt + F4` ou `Ctrl + W` |
 | Badge `● N non sync.` qui persiste | Vérifier la connexion internet + la config Supabase (§8) |
 | Dashboard en ligne vide | Même URL + clé publishable que la caisse ? Migration SQL exécutée ? |
+| Afficheur client muet | Reconnecter via §9 ; vérifier le port COM et le câble |
+| 2ᵉ ligne de l'afficheur décalée | Modèle utilisant un autre code de saut de ligne → voir note §9 |
 
 ---
 
@@ -213,6 +215,39 @@ via le dashboard en ligne, en temps réel.
 
 > ⚠ Ne jamais saisir la clé **secrète** (`sb_secret_…`) ni le mot de passe de la
 > base : seules l'URL et la clé **publishable** sont nécessaires.
+
+---
+
+## 9. Afficheur client VFD (écran prix côté cliente) — optionnel
+
+Écran **2 lignes × 20 caractères** orienté vers la cliente, qui affiche les
+services et les prix en temps réel. Branché au TPV en **série (COM)** ou **USB**,
+piloté via la **Web Serial API** (Chrome / Edge sur Windows uniquement).
+
+### 9.1 Repérer le port
+
+1. Clic droit sur **Démarrer → Gestionnaire de périphériques**.
+2. Dérouler **Ports (COM et LPT)** → noter le port de l'afficheur (ex. `COM3`).
+   (Un afficheur USB peut apparaître comme « USB Serial Port (COMx) ».)
+
+### 9.2 Connecter l'afficheur
+
+1. Caisse → **Gestion → Paramètres → Afficheur client VFD**.
+2. **Connecter l'afficheur** → Chrome affiche une popup de sélection : choisir le
+   port noté à l'étape 9.1 (autorisation demandée **une seule fois** par origine).
+3. Le badge **🖥 VFD** de l'en-tête passe au **vert**. Les boutons **Test bienvenue
+   / Test total / Test défilement** permettent de vérifier l'affichage.
+
+L'afficheur réagit ensuite automatiquement : ajout au panier (service + prix +
+total), total à payer, remerciement, puis **mode veille** après 5 min d'inactivité.
+
+> - Réglages port : **9600 bauds, 8 bits, 1 stop, sans parité** (standard VFD SAGA).
+> - Si l'afficheur n'est pas connecté, la caisse fonctionne normalement (aucun effet).
+> - **2ᵉ ligne décalée ?** Selon le modèle, le saut de ligne n'est pas `CR/LF`.
+>   Dans `AS_SPA_Caisse.html`, fonction `vfdSend`, remplacer les octets
+>   `[0x0D,0x0A]` par la commande du modèle (ex. `[0x1B,0x6C,0x02]`).
+> - La popup de choix du port réapparaît après un changement de port USB ou un
+>   nettoyage des autorisations du navigateur.
 
 ---
 
