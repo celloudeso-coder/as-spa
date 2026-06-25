@@ -86,9 +86,20 @@ tr:last-child td{border-bottom:none}
 .form-group input{width:100%;min-height:48px;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;color:var(--ink);background:#fff}
 .note{font-size:14px;color:var(--gray);margin-bottom:12px}
 
-@media(max-width:600px){
+@media(max-width:640px){
+  .wrap{padding:12px}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
-  .cell-services{max-width:160px}
+  .card{padding:14px}
+  /* Filtres + dates en pleine largeur */
+  .date-range{margin-left:0;width:100%}
+  .date-range input{flex:1;min-width:0}
+  .filt-btn{flex:1}
+  /* Tableau des transactions → cartes empilées (lisible sur mobile) */
+  table.tx-cards thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  table.tx-cards tr{display:block;border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-bottom:10px;box-shadow:var(--shadow)}
+  table.tx-cards td{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:5px 0;border:none;text-align:right;white-space:normal}
+  table.tx-cards td::before{content:attr(data-label);font-weight:700;color:var(--gray);text-transform:uppercase;font-size:12px;letter-spacing:.3px;text-align:left;flex-shrink:0}
+  table.tx-cards td.cell-services{max-width:none}
 }
 </style>
 <!-- Client Supabase -->
@@ -387,18 +398,18 @@ function render(){
   // 50 dernières transactions (déjà triées récent → ancien)
   const rows=txs.slice(0,50);
   document.getElementById('tx-table').innerHTML=rows.length
-    ?'<table><thead><tr><th>Reçu</th><th>Date</th><th>Heure</th><th>Cliente</th><th>Services</th><th class="r">Montant</th><th>Paiement</th><th>Caissier</th></tr></thead><tbody>'+
+    ?'<table class="tx-cards"><thead><tr><th>Reçu</th><th>Date</th><th>Heure</th><th>Cliente</th><th>Services</th><th class="r">Montant</th><th>Paiement</th><th>Caissier</th></tr></thead><tbody>'+
       rows.map(t=>{
         const d=new Date(t.date);
         return '<tr>'+
-          '<td>'+esc(t.num)+'</td>'+
-          '<td>'+d.toLocaleDateString('fr-FR')+'</td>'+
-          '<td>'+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</td>'+
-          '<td>'+esc(t.client_nom||'Cliente')+'</td>'+
-          '<td class="cell-services">'+esc((t.items||[]).map(i=>(i.qty>1?i.qty+'× ':'')+i.name).join(', '))+'</td>'+
-          '<td class="r">'+fmtS(t.total)+' GNF</td>'+
-          '<td><span class="pay-badge">'+esc(t.paiement||'')+'</span></td>'+
-          '<td>'+esc(t.caissier||'—')+'</td>'+
+          '<td data-label="Reçu">'+esc(t.num)+'</td>'+
+          '<td data-label="Date">'+d.toLocaleDateString('fr-FR')+'</td>'+
+          '<td data-label="Heure">'+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</td>'+
+          '<td data-label="Cliente">'+esc(t.client_nom||'Cliente')+'</td>'+
+          '<td class="cell-services" data-label="Services">'+esc((t.items||[]).map(i=>(i.qty>1?i.qty+'× ':'')+i.name).join(', '))+'</td>'+
+          '<td class="r" data-label="Montant">'+fmtS(t.total)+' GNF</td>'+
+          '<td data-label="Paiement"><span class="pay-badge">'+esc(t.paiement||'')+'</span></td>'+
+          '<td data-label="Caissier">'+esc(t.caissier||'—')+'</td>'+
         '</tr>';
       }).join('')+
       '</tbody></table>'
