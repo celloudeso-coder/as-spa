@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#B8902A"/>
+<title>AS SPA — Accueil</title>
+<style>
+:root{
+  --gold:#B8902A;--gold-light:#D4AF5A;--gold-pale:#F5EDD8;
+  --cream:#FEFCF8;--brown:#5C3D1E;--ink:#1A1208;--gray:#7A7060;--border:#E8DECA;
+  --font:'Georgia','Times New Roman',serif;--mono:'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--mono);background:var(--cream);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.box{background:#fff;border-radius:20px;padding:40px 32px;max-width:440px;width:100%;box-shadow:0 8px 40px rgba(184,144,42,.18);border:1px solid var(--border);text-align:center}
+.logo{width:80px;height:80px;border-radius:50%;border:2.5px solid var(--gold);display:flex;align-items:center;justify-content:center;background:var(--gold-pale);font-family:var(--font);font-size:28px;font-weight:bold;color:var(--gold);margin:0 auto 18px}
+.brand{font-family:var(--font);font-size:26px;color:var(--brown);margin-bottom:4px}
+.sub{font-size:14px;color:var(--gray);margin-bottom:30px;letter-spacing:.5px}
+.links{display:flex;flex-direction:column;gap:14px}
+.link{display:block;text-decoration:none;padding:18px;border-radius:14px;font-size:16px;font-weight:700}
+.link-gold{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;box-shadow:0 4px 16px rgba(184,144,42,.35)}
+.link-soft{background:var(--gold-pale);color:var(--brown);border:1.5px solid var(--gold)}
+.link small{display:block;font-weight:400;font-size:13px;opacity:.85;margin-top:3px}
+.link:active{opacity:.85}
+.foot{margin-top:26px;font-size:13px;color:var(--gray);line-height:1.5}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">AS</div>
+    <div class="brand">AS SPA</div>
+    <div class="sub">— Institut de beauté —</div>
+    <div class="links">
+      <a class="link link-gold" href="./AS_SPA_Dashboard.html">Dashboard Propriétaire
+        <small>Statistiques &amp; ventes en temps réel</small></a>
+      <a class="link link-soft" href="./AS_SPA_Caisse.html">Caisse
+        <small>Encaissement &amp; reçus (usage local sur le TPV)</small></a>
+    </div>
+    <div class="foot">RATOMA, Carrefour Hôtel MARIADOR PALACE<br>Tél : 623 606 098</div>
+  </div>
+</body>
+</html>
