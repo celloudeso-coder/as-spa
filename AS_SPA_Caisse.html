@@ -93,6 +93,7 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
 .header-title{font-family:var(--font);font-size:20px;color:var(--brown)}
 .header-title span{font-size:14px;color:var(--gray);display:block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px}
 .header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.sync-badge{font-size:14px;font-weight:700;white-space:nowrap}
 .header-time{font-size:14px;color:var(--gray);text-align:right;line-height:1.4}
 .btn-logout,.btn-fs{
   padding:0 14px;border-radius:20px;border:1.5px solid var(--border);
@@ -189,11 +190,12 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
 .dash-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .filt-btn{padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:14px;color:var(--gray);font-weight:600}
 .filt-btn.active{background:var(--gold);border-color:var(--gold);color:#fff}
-.tx-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
+.tx-row{display:grid;grid-template-columns:1fr auto auto;align-items:start;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
 .tx-row:last-child{border-bottom:none}
+.tx-row>div:first-child{min-width:0}
 .tx-num{font-size:14px;color:var(--gray);font-weight:700}
 .tx-client{font-size:14px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tx-services{font-size:14px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-services{font-size:14px;color:var(--gray);line-height:1.4;overflow-wrap:anywhere;word-break:break-word}
 .tx-caissier{font-size:14px;color:var(--blue);font-weight:600}
 .tx-amount{font-size:14px;color:var(--brown);font-weight:700;text-align:right;white-space:nowrap}
 .tx-badge{font-size:14px;padding:4px 9px;border-radius:10px;font-weight:700;background:var(--green-pale);color:var(--green);white-space:nowrap}
@@ -241,6 +243,8 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
+<!-- Client Supabase (sync optionnelle ; échec silencieux si hors ligne au 1er chargement) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -272,6 +276,7 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
   </div>
   <div class="header-right">
     <div class="header-time" id="header-time"></div>
+    <div id="sync-badge" class="sync-badge" style="display:none"></div>
     <div id="header-badge"></div>
     <button class="btn-fs" onclick="toggleFullscreen()" title="Plein écran (F5)">Plein écran</button>
     <button class="btn-logout" onclick="doLogout()">⏻ Quitter</button>
@@ -381,6 +386,17 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
       <input type="checkbox" id="set-tiroir-auto" onchange="setTiroirAuto(this.checked)" style="width:24px;height:24px;flex-shrink:0"/>
       Ouverture tiroir automatique à chaque impression
     </label>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:4px">Connexion Supabase <span style="font-weight:400;color:var(--gray)">(synchronisation optionnelle)</span></div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:10px">Laisser vide pour rester 100% hors ligne. Les ventes restent toujours enregistrées localement.</div>
+      <div class="form-row">
+        <div class="form-group"><label>URL du projet Supabase</label><input type="text" id="sb-url" placeholder="https://xxxx.supabase.co" autocomplete="off"/></div>
+        <div class="form-group"><label>Clé anonyme (anon key)</label><input type="text" id="sb-key" placeholder="eyJhbGciOi..." autocomplete="off"/></div>
+      </div>
+      <button class="btn-primary" style="margin-top:0" onclick="saveSupabaseConfig()">Tester &amp; Enregistrer</button>
+      <div id="sb-status" style="font-size:14px;margin-top:10px"></div>
+    </div>
   </div>
 
   <!-- Zone danger propriétaire -->
@@ -543,7 +559,7 @@ let tiroirAuto=true;        // ouverture tiroir auto à l'impression (réglage)
 let db;
 function openDB(){
   return new Promise((res,rej)=>{
-    const req=indexedDB.open('AsSpaDB',2);
+    const req=indexedDB.open('AsSpaDB',3);
     req.onupgradeneeded=e=>{
       const d=e.target.result;
       if(!d.objectStoreNames.contains('transactions'))
@@ -552,6 +568,9 @@ function openDB(){
         d.createObjectStore('meta',{keyPath:'key'});
       if(!d.objectStoreNames.contains('users'))
         d.createObjectStore('users',{keyPath:'id',autoIncrement:true});
+      // v3 : file d'attente de synchronisation Supabase (push différé)
+      if(!d.objectStoreNames.contains('sync_queue'))
+        d.createObjectStore('sync_queue',{keyPath:'id',autoIncrement:true});
     };
     req.onsuccess=e=>{db=e.target.result;res(db)};
     req.onerror=()=>rej(req.error);
@@ -892,6 +911,7 @@ async function validerTransaction(){
     paiement:currentPay,note,
     caissier:currentUser.name,
     caissierRole:currentUser.role,
+    synced:false,   // non encore poussé vers Supabase
   };
   await dbPut('transactions',tx);
   showRecu(tx);
@@ -939,6 +959,7 @@ function closeRecu(){
   ['client-nom','client-tel','tx-note'].forEach(id=>document.getElementById(id).value='');
   renderServices();renderPanier();
   toast('✓ Transaction enregistrée !');
+  syncToSupabase();   // push immédiat si en ligne (sinon différé)
 }
 
 /* ═══ DASHBOARD ═════════════════════════════════════════════ */
@@ -1195,9 +1216,14 @@ function setTiroirAuto(checked){
   dbPut('meta',{key:'tiroir_auto',val:tiroirAuto});
   toast(tiroirAuto?'✓ Tiroir auto activé':'Tiroir auto désactivé');
 }
-function syncSettingsUI(){
+async function syncSettingsUI(){
   const el=document.getElementById('set-tiroir-auto');
   if(el) el.checked=tiroirAuto;
+  // Champs Supabase
+  const cfg=await getSupabaseConfig();
+  const u=document.getElementById('sb-url'), k=document.getElementById('sb-key');
+  if(u) u.value=cfg&&cfg.url?cfg.url:'';
+  if(k) k.value=cfg&&cfg.key?cfg.key:'';
 }
 
 /* ═══ VIDER PANIER ══════════════════════════════════════════ */
@@ -1344,11 +1370,135 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+/* ═══════════════════════════════════════════════════════════
+   SYNCHRONISATION SUPABASE (optionnelle — IndexedDB reste maître)
+══════════════════════════════════════════════════════════════ */
+let syncing=false;
+
+// Lit la config {url,key} depuis IndexedDB (clé meta 'supabase_config')
+function getSupabaseConfig(){
+  return new Promise(res=>{
+    const tx=db.transaction('meta','readonly');
+    const req=tx.objectStore('meta').get('supabase_config');
+    req.onsuccess=()=>res(req.result?req.result.val:null);
+    req.onerror=()=>res(null);
+  });
+}
+
+// Initialise window.supabaseClient si une config valide existe
+async function initSupabase(){
+  window.supabaseClient=null;
+  const cfg=await getSupabaseConfig();
+  if(cfg&&cfg.url&&cfg.key&&typeof supabase!=='undefined'){
+    try{ window.supabaseClient=supabase.createClient(cfg.url,cfg.key); }
+    catch(e){ window.supabaseClient=null; }
+  }
+  updateSyncBadge();
+}
+
+async function countUnsynced(){
+  const all=await dbGetAll('transactions');
+  return all.filter(t=>t.synced!==true).length;
+}
+
+// Badge header : "● X non sync." / "✓ Sync" (visible si Supabase configuré)
+async function updateSyncBadge(){
+  const el=document.getElementById('sync-badge');
+  if(!el) return;
+  const cfg=await getSupabaseConfig();
+  if(!cfg||!cfg.url){ el.style.display='none'; return; }
+  el.style.display='';
+  const n=await countUnsynced();
+  if(n>0){ el.textContent='● '+n+' non sync.'; el.style.color='var(--red)'; }
+  else   { el.textContent='✓ Sync';            el.style.color='var(--green)'; }
+}
+
+// Pousse les transactions non synchronisées vers Supabase (upsert sur local_id)
+async function syncToSupabase(){
+  if(syncing) return;
+  if(!window.supabaseClient||!navigator.onLine) return;
+  syncing=true;
+  try{
+    const all=await dbGetAll('transactions');
+    const pending=all.filter(t=>t.synced!==true);
+    if(pending.length){
+      const rows=pending.map(t=>({
+        local_id:t.id,
+        num:t.num,
+        date:t.date,
+        client_nom:t.client?t.client.nom:'',
+        client_tel:t.client?t.client.tel:'',
+        items:t.items,
+        total:t.total,
+        paiement:t.paiement||'',
+        caissier:t.caissier||'',
+        caissier_role:t.caissierRole||'',
+        note:t.note||'',
+      }));
+      const { error }=await window.supabaseClient
+        .from('transactions')
+        .upsert(rows,{onConflict:'local_id'});
+      if(!error){
+        for(const t of pending){ t.synced=true; await dbPut('transactions',t); }
+      }
+    }
+  }catch(e){ /* hors-ligne / erreur réseau : nouvel essai au prochain cycle */ }
+  syncing=false;
+  updateSyncBadge();
+}
+
+// Teste la connexion puis enregistre la config (ou désactive si champs vides)
+async function saveSupabaseConfig(){
+  const url=document.getElementById('sb-url').value.trim().replace(/\/+$/,'');
+  const key=document.getElementById('sb-key').value.trim();
+  const st=document.getElementById('sb-status');
+  if(!url&&!key){
+    await dbPut('meta',{key:'supabase_config',val:null});
+    window.supabaseClient=null;
+    st.textContent='Synchronisation désactivée — tout reste local.';
+    st.style.color='var(--gray)';
+    updateSyncBadge();
+    return;
+  }
+  if(!url||!key){
+    st.textContent="⚠ Renseignez l'URL et la clé (ou laissez les deux vides).";
+    st.style.color='var(--red)';
+    return;
+  }
+  if(typeof supabase==='undefined'){
+    st.textContent='⚠ Librairie Supabase non chargée (connexion internet requise au 1er lancement).';
+    st.style.color='var(--red)';
+    return;
+  }
+  st.textContent='Test de connexion…'; st.style.color='var(--gray)';
+  try{
+    const client=supabase.createClient(url,key);
+    const { error }=await client.from('transactions').select('id').limit(1);
+    if(error) throw error;
+    await dbPut('meta',{key:'supabase_config',val:{url,key}});
+    window.supabaseClient=client;
+    st.textContent='✓ Connecté & enregistré.'; st.style.color='var(--green)';
+    toast('✓ Supabase connecté');
+    syncToSupabase();
+  }catch(e){
+    st.textContent='⚠ Échec : '+((e&&e.message)||'connexion impossible');
+    st.style.color='var(--red)';
+  }
+}
+
+// Sync périodique (30 s) + au retour en ligne
+function startSyncLoop(){
+  setInterval(syncToSupabase,30000);
+  window.addEventListener('online',syncToSupabase);
+}
+
 /* ═══ INIT ══════════════════════════════════════════════════ */
 openDB().then(async()=>{
   await ensureDefaultUsers();
   await loadSettings();
+  await initSupabase();
   await populateLoginSelect();
+  startSyncLoop();
 });
 </script>
 </body>

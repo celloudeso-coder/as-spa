@@ -3,9 +3,17 @@
 Application de caisse **PWA** (Progressive Web App) pour l'institut de beauté
 **AS SPA** à Conakry (RATOMA, Carrefour Hôtel MARIADOR PALACE — Tél : 623 606 098).
 
-Le tout tient dans un **unique fichier HTML autonome** : [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html)
-(HTML + CSS + JavaScript, sans dépendance à installer). Il fonctionne hors-ligne
-et stocke ses données localement dans le navigateur via **IndexedDB**.
+La caisse tient dans un **unique fichier HTML autonome** : [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html)
+(HTML + CSS + JavaScript, sans dépendance à installer). Elle fonctionne hors-ligne
+et stocke ses données localement dans le navigateur via **IndexedDB**. Un dashboard
+propriétaire et une synchronisation Supabase sont disponibles en option.
+
+## Contenu du dépôt
+
+- [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html) — caisse PWA autonome, 100% hors ligne (IndexedDB).
+- [`AS_SPA_Dashboard.html`](AS_SPA_Dashboard.html) — dashboard propriétaire (lecture Supabase), déployable Vercel / GitHub Pages.
+- [`supabase/migration_asspa.sql`](supabase/migration_asspa.sql) — schéma Supabase (table, index, RLS) + guide de création du projet.
+- [`LANCEMENT_SAGA.md`](LANCEMENT_SAGA.md) — installation & démarrage automatique sur TPV SAGA (Windows).
 
 ## Fonctionnalités
 
@@ -58,6 +66,38 @@ tactile 1024×768, imprimante thermique, tiroir-caisse RJ11) :
 Procédure complète d'installation et de démarrage automatique :
 voir [`LANCEMENT_SAGA.md`](LANCEMENT_SAGA.md).
 
+## Synchronisation Supabase (optionnelle)
+
+La caisse fonctionne **100% hors ligne** : IndexedDB reste la source de vérité.
+Supabase est une couche de synchronisation **facultative** — si les champs de
+config sont vides, rien ne sort de l'appareil.
+
+- Chaque transaction porte un champ `synced` ; un service pousse en arrière-plan
+  (toutes les 30 s, après chaque vente et au retour en ligne) les transactions
+  non synchronisées via `upsert` sur `local_id` (déduplication).
+- Configuration dans **Gestion → Paramètres → Connexion Supabase** (URL + clé
+  anon). Un badge header indique l'état : `● N non sync.` ou `✓ Sync`.
+- **Dashboard propriétaire** séparé : [`AS_SPA_Dashboard.html`](AS_SPA_Dashboard.html)
+  (déployable sur Vercel / GitHub Pages) — accès par mot de passe (SHA-256),
+  KPIs, top 7 services, 50 dernières transactions, export CSV, et actualisation
+  temps réel (Supabase Realtime + rafraîchissement 60 s).
+- Schéma de base de données : [`supabase/migration_asspa.sql`](supabase/migration_asspa.sql)
+  (table `transactions`, index, politiques RLS, instructions de création du projet).
+
+### Mise en route (testé)
+
+1. **Base** : exécuter [`supabase/migration_asspa.sql`](supabase/migration_asspa.sql)
+   dans le SQL Editor du projet Supabase (*Run* → « Success. No rows returned »).
+2. **Caisse** : Gestion → Paramètres → Connexion Supabase → saisir l'URL du projet
+   et la clé publishable (`sb_publishable_…`, joue le rôle de clé anon), puis
+   *Tester & Enregistrer*. Le badge du header passe à `✓ Sync`.
+3. **Dashboard** : ouvrir `AS_SPA_Dashboard.html`, définir le mot de passe, saisir
+   la même URL + clé → les ventes de la caisse s'affichent en direct.
+
+> Les identifiants se saisissent dans l'interface (jamais en dur dans les fichiers
+> ni dans Git). La clé `service_role` / secret et le mot de passe Postgres ne sont
+> **pas** utilisés par les applications.
+
 ## Utilisation
 
 Ouvrir [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html) dans un navigateur récent
@@ -71,13 +111,17 @@ Ouvrir [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html) dans un navigateur récent
 
 ## Données
 
-- Stockage local **IndexedDB** (`AsSpaDB`) : transactions, utilisateurs, compteur
-  de reçus et paramètres (ex. `tiroir_auto` pour l'ouverture automatique du tiroir).
+- Stockage local **IndexedDB** (`AsSpaDB`, v3) : `transactions` (avec champ
+  `synced`), `users`, `meta` (compteur de reçus, `tiroir_auto`, `supabase_config`)
+  et `sync_queue`.
 - **Sauvegarde** : export JSON (`ASSPA_backup_AAAA-MM-JJ.json`).
-- **Exports** : `ASSPA_AAAA-MM-JJ.csv` et `ASSPA_rapport_AAAA-MM-JJ.pdf`.
+- **Exports** : `ASSPA_AAAA-MM-JJ.csv`, `ASSPA_rapport_AAAA-MM-JJ.pdf` et
+  `ASSPA_dashboard_AAAA-MM-JJ.csv` (depuis le dashboard).
 
 ## Technique
 
-- Fichier unique HTML/CSS/JS, sans étape de build.
+- Fichiers HTML/CSS/JS autonomes, sans étape de build.
+- Dépendances chargées à la demande depuis un CDN (connexion requise seulement
+  à ce moment) : jsPDF + jspdf-autotable (export PDF), supabase-js (sync optionnelle).
 - Palette or/champagne, police serif Georgia pour les titres.
 - Devise : Franc guinéen (**GNF**).

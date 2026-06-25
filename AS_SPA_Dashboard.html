@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#B8902A"/>
+<title>AS SPA — Dashboard Propriétaire</title>
+<style>
+:root{
+  --gold:#B8902A;--gold-light:#D4AF5A;--gold-pale:#F5EDD8;--gold-bg:#FBF7EF;
+  --cream:#FEFCF8;--brown:#5C3D1E;--brown-soft:#8B6340;--ink:#1A1208;
+  --gray:#7A7060;--border:#E8DECA;--red:#C0392B;--green:#27674A;
+  --green-pale:#E8F5EE;--blue:#2563EB;--blue-pale:#EFF6FF;
+  --shadow:0 2px 12px rgba(184,144,42,.12);--radius:14px;
+  --font:'Georgia','Times New Roman',serif;--mono:'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--mono);background:var(--cream);color:var(--ink);font-size:14px;min-height:100vh}
+button{cursor:pointer;font-family:var(--mono);border:none;outline:none;font-size:14px}
+input,select{font-family:var(--mono);outline:none;font-size:14px}
+
+/* ── CONNEXION ───────────────────────────────────────────── */
+#screen-login{position:fixed;inset:0;background:var(--cream);display:flex;align-items:center;justify-content:center;z-index:999;padding:24px}
+.login-box{background:#fff;border-radius:20px;padding:36px 28px;max-width:400px;width:100%;box-shadow:0 8px 40px rgba(184,144,42,.18);border:1px solid var(--border);text-align:center}
+.login-logo{width:72px;height:72px;border-radius:50%;border:2.5px solid var(--gold);display:flex;align-items:center;justify-content:center;background:var(--gold-pale);font-family:var(--font);font-size:26px;font-weight:bold;color:var(--gold);margin:0 auto 16px}
+.login-brand{font-family:var(--font);font-size:24px;color:var(--brown);margin-bottom:4px}
+.login-sub{font-size:14px;color:var(--gray);margin-bottom:24px;letter-spacing:.5px}
+.login-label{font-size:13px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;text-align:left;margin-bottom:5px}
+.login-input{width:100%;padding:14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;color:var(--ink);background:#fff;margin-bottom:14px}
+.login-input:focus{border-color:var(--gold)}
+.login-btn{width:100%;padding:14px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(184,144,42,.35)}
+.login-btn:active{opacity:.8}
+.login-error{font-size:14px;color:var(--red);margin-bottom:10px;display:none}
+
+/* ── HEADER ──────────────────────────────────────────────── */
+.header{background:#fff;border-bottom:2px solid var(--gold);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow);gap:12px;flex-wrap:wrap}
+.header-logo{display:flex;align-items:center;gap:12px}
+.logo-circle{width:46px;height:46px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;background:var(--gold-pale);font-family:var(--font);font-size:17px;font-weight:bold;color:var(--gold);letter-spacing:1px}
+.header-title{font-family:var(--font);font-size:20px;color:var(--brown)}
+.header-title span{font-size:14px;color:var(--gray);display:block;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-time{font-size:14px;color:var(--gray);text-align:right;line-height:1.4}
+.btn-logout{min-height:44px;padding:0 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:14px;color:var(--gray);font-weight:700}
+.btn-logout:active{background:var(--gold-pale)}
+.dot-live{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--green);margin-right:6px}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.wrap{max-width:1100px;margin:0 auto;padding:18px}
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-family:var(--font);font-size:16px;color:var(--brown);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.card-title .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}
+
+/* ── FILTRES ─────────────────────────────────────────────── */
+.dash-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filt-btn{min-height:44px;padding:8px 18px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:14px;color:var(--gray);font-weight:600}
+.filt-btn.active{background:var(--gold);border-color:var(--gold);color:#fff}
+.date-range{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.date-range label{font-size:13px;color:var(--gray);font-weight:700}
+.date-range input{min-height:44px;padding:8px 10px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;color:var(--ink);background:#fff}
+.btn-apply{min-height:44px;padding:8px 16px;border-radius:9px;border:1.5px solid var(--gold);background:var(--gold-pale);color:var(--brown);font-size:14px;font-weight:700}
+
+/* ── STATS ───────────────────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:12px;border:1px solid var(--border);padding:16px;box-shadow:var(--shadow)}
+.stat-label{font-size:14px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-val{font-family:var(--font);font-size:24px;color:var(--gold);font-weight:bold}
+.stat-sub{font-size:14px;color:var(--gray);margin-top:2px}
+
+/* ── TABLES ──────────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.3px;font-size:13px;padding:8px 10px;border-bottom:2px solid var(--gold)}
+td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--ink);vertical-align:top}
+td.r,th.r{text-align:right;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+.rank{display:inline-flex;width:24px;height:24px;border-radius:50%;background:var(--gold-pale);font-size:13px;font-weight:700;color:var(--gold);align-items:center;justify-content:center}
+.pay-badge{font-size:13px;padding:3px 9px;border-radius:10px;font-weight:700;background:var(--green-pale);color:var(--green);white-space:nowrap}
+.cell-services{color:var(--gray);max-width:340px}
+.empty{text-align:center;padding:24px 0;color:var(--gray)}
+
+/* ── BOUTONS ─────────────────────────────────────────────── */
+.btn-primary{padding:13px 22px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(184,144,42,.35)}
+.btn-primary:active{opacity:.8}
+.btn-csv{padding:10px 22px;border-radius:20px;border:1.5px solid var(--gold);background:var(--gold-pale);color:var(--brown);font-size:14px;font-weight:700}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:13px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px}
+.form-group input{width:100%;min-height:48px;padding:11px 13px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;color:var(--ink);background:#fff}
+.note{font-size:14px;color:var(--gray);margin-bottom:12px}
+
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .cell-services{max-width:160px}
+}
+</style>
+<!-- Client Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<!-- ══ CONNEXION ════════════════════════════════════════════ -->
+<div id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">AS</div>
+    <div class="login-brand">AS SPA</div>
+    <div class="login-sub" id="login-sub">— Dashboard Propriétaire —</div>
+    <div id="setup-hint" class="note" style="display:none">Premier lancement : définissez un mot de passe d'accès.</div>
+    <label class="login-label">Mot de passe</label>
+    <input class="login-input" type="password" id="login-pw" placeholder="••••••••" autocomplete="off"/>
+    <div id="login-pw2-wrap" style="display:none">
+      <label class="login-label">Confirmer le mot de passe</label>
+      <input class="login-input" type="password" id="login-pw2" placeholder="••••••••" autocomplete="off"/>
+    </div>
+    <div class="login-error" id="login-error"></div>
+    <button class="login-btn" id="login-btn" onclick="doAuth()">Se connecter</button>
+  </div>
+</div>
+
+<!-- ══ APP ══════════════════════════════════════════════════ -->
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="header-logo">
+      <div class="logo-circle">AS</div>
+      <div class="header-title">AS SPA<span>Dashboard Propriétaire</span></div>
+    </div>
+    <div class="header-right">
+      <div class="header-time" id="header-time"></div>
+      <div id="live-badge" style="font-size:13px;color:var(--green);font-weight:700;display:none"><span class="dot-live"></span>en direct</div>
+      <button class="btn-logout" onclick="doLogout()">⏻ Quitter</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <!-- Config Supabase (affichée si non configurée) -->
+    <div class="card" id="config-card" style="display:none">
+      <div class="card-title"><span class="dot"></span>Connexion Supabase</div>
+      <div class="note">Renseignez l'URL et la clé anonyme de votre projet Supabase (les mêmes que dans la caisse).</div>
+      <div class="form-group"><label>URL du projet</label><input type="text" id="cfg-url" placeholder="https://xxxx.supabase.co" autocomplete="off"/></div>
+      <div class="form-group"><label>Clé anonyme (anon key)</label><input type="text" id="cfg-key" placeholder="eyJhbGciOi..." autocomplete="off"/></div>
+      <button class="btn-primary" onclick="saveConfig()">Connecter</button>
+      <div id="cfg-status" style="font-size:14px;margin-top:10px"></div>
+    </div>
+
+    <!-- Tableau de bord -->
+    <div id="dash-content" style="display:none">
+      <div class="dash-filters">
+        <button class="filt-btn active" data-f="today" onclick="setFilter('today',this)">Aujourd'hui</button>
+        <button class="filt-btn" data-f="week" onclick="setFilter('week',this)">Cette semaine</button>
+        <button class="filt-btn" data-f="month" onclick="setFilter('month',this)">Ce mois</button>
+        <button class="filt-btn" data-f="all" onclick="setFilter('all',this)">Tout</button>
+        <div class="date-range">
+          <label>Du</label><input type="date" id="date-from"/>
+          <label>Au</label><input type="date" id="date-to"/>
+          <button class="btn-apply" onclick="applyCustom()">Appliquer</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="stats-grid"></div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Top 7 services</div>
+        <div id="top-services"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>50 dernières transactions</div>
+        <div style="overflow-x:auto" id="tx-table"></div>
+        <div style="text-align:center;margin-top:14px">
+          <button class="btn-csv" onclick="exportCSV()">↓ Exporter CSV</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ═══ ÉTAT ═════════════════════════════════════════════════ */
+let supaClient=null;
+let allTx=[];                 // transactions récupérées (triées récent → ancien)
+let currentFilter='today';
+let customFrom=null, customTo=null;
+let refreshTimer=null, realtimeChannel=null;
+
+/* ═══ HELPERS ══════════════════════════════════════════════ */
+function fmtS(n){return Number(n||0).toLocaleString('fr-FR')}
+function timeStr(){return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+function dateStr(){return new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+async function sha256(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function updateClock(){
+  const el=document.getElementById('header-time');
+  if(el) el.innerHTML='<strong style="font-size:15px;color:var(--brown)">'+timeStr()+'</strong><br><span>'+dateStr()+'</span>';
+}
+
+/* ═══ AUTHENTIFICATION (SHA-256 en localStorage) ═══════════ */
+function isFirstLaunch(){return !localStorage.getItem('dash_pw_hash')}
+function initLoginScreen(){
+  if(isFirstLaunch()){
+    document.getElementById('setup-hint').style.display='block';
+    document.getElementById('login-pw2-wrap').style.display='block';
+    document.getElementById('login-btn').textContent='Définir le mot de passe';
+    document.getElementById('login-sub').textContent='— Configuration initiale —';
+  }
+}
+async function doAuth(){
+  const pw=document.getElementById('login-pw').value;
+  const err=document.getElementById('login-error');
+  err.style.display='none';
+  if(!pw){err.textContent='Entrez un mot de passe.';err.style.display='block';return;}
+  if(typeof crypto==='undefined'||!crypto.subtle){
+    err.textContent='SHA-256 indisponible (servez la page en HTTPS : Vercel / GitHub Pages).';
+    err.style.display='block';return;
+  }
+  if(isFirstLaunch()){
+    const pw2=document.getElementById('login-pw2').value;
+    if(pw.length<4){err.textContent='Mot de passe trop court (4 caractères min).';err.style.display='block';return;}
+    if(pw!==pw2){err.textContent='Les deux mots de passe ne correspondent pas.';err.style.display='block';return;}
+    localStorage.setItem('dash_pw_hash',await sha256(pw));
+    enterApp();
+  }else{
+    const h=await sha256(pw);
+    if(h===localStorage.getItem('dash_pw_hash')){ enterApp(); }
+    else{ err.textContent='Mot de passe incorrect.';err.style.display='block';document.getElementById('login-pw').value=''; }
+  }
+}
+function enterApp(){
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('app').style.display='block';
+  updateClock(); setInterval(updateClock,30000);
+  initDashboard();
+}
+function doLogout(){
+  if(realtimeChannel&&supaClient){ supaClient.removeChannel(realtimeChannel); realtimeChannel=null; }
+  if(refreshTimer){ clearInterval(refreshTimer); refreshTimer=null; }
+  document.getElementById('app').style.display='none';
+  document.getElementById('screen-login').style.display='flex';
+  document.getElementById('login-pw').value='';
+  const pw2=document.getElementById('login-pw2'); if(pw2) pw2.value='';
+  document.getElementById('login-error').style.display='none';
+}
+
+/* ═══ CONFIG SUPABASE (localStorage) ═══════════════════════ */
+function getConfig(){
+  const url=localStorage.getItem('dash_supabase_url')||'';
+  const key=localStorage.getItem('dash_supabase_key')||'';
+  return (url&&key)?{url,key}:null;
+}
+async function saveConfig(){
+  const url=document.getElementById('cfg-url').value.trim().replace(/\/+$/,'');
+  const key=document.getElementById('cfg-key').value.trim();
+  const st=document.getElementById('cfg-status');
+  if(!url||!key){ st.textContent='⚠ Renseignez l\'URL et la clé.'; st.style.color='var(--red)'; return; }
+  if(typeof supabase==='undefined'){ st.textContent='⚠ Librairie Supabase non chargée (connexion internet requise).'; st.style.color='var(--red)'; return; }
+  st.textContent='Test de connexion…'; st.style.color='var(--gray)';
+  try{
+    const client=supabase.createClient(url,key);
+    const { error }=await client.from('transactions').select('id').limit(1);
+    if(error) throw error;
+    localStorage.setItem('dash_supabase_url',url);
+    localStorage.setItem('dash_supabase_key',key);
+    st.textContent='✓ Connecté.'; st.style.color='var(--green)';
+    initDashboard();
+  }catch(e){ st.textContent='⚠ Échec : '+((e&&e.message)||'connexion impossible'); st.style.color='var(--red)'; }
+}
+
+/* ═══ DASHBOARD ════════════════════════════════════════════ */
+function initDashboard(){
+  const cfg=getConfig();
+  if(!cfg){
+    document.getElementById('config-card').style.display='block';
+    document.getElementById('dash-content').style.display='none';
+    return;
+  }
+  if(typeof supabase==='undefined'){
+    document.getElementById('config-card').style.display='block';
+    document.getElementById('cfg-status').textContent='⚠ Librairie Supabase non chargée (vérifiez la connexion internet).';
+    document.getElementById('cfg-status').style.color='var(--red)';
+    return;
+  }
+  supaClient=supabase.createClient(cfg.url,cfg.key);
+  document.getElementById('config-card').style.display='none';
+  document.getElementById('dash-content').style.display='block';
+  loadData();
+  // Rafraîchissement auto toutes les 60 s
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer=setInterval(loadData,60000);
+  // Abonnement temps réel
+  subscribeRealtime();
+}
+
+function subscribeRealtime(){
+  if(!supaClient) return;
+  if(realtimeChannel){ supaClient.removeChannel(realtimeChannel); realtimeChannel=null; }
+  try{
+    realtimeChannel=supaClient
+      .channel('asspa-tx')
+      .on('postgres_changes',{event:'*',schema:'public',table:'transactions'},()=>loadData())
+      .subscribe(status=>{
+        document.getElementById('live-badge').style.display=(status==='SUBSCRIBED')?'inline-block':'none';
+      });
+  }catch(e){ /* realtime indisponible : le rafraîchissement 60 s prend le relais */ }
+}
+
+async function loadData(){
+  if(!supaClient) return;
+  try{
+    const { data, error }=await supaClient
+      .from('transactions')
+      .select('*')
+      .order('date',{ascending:false})
+      .limit(2000);
+    if(error) throw error;
+    allTx=data||[];
+    render();
+  }catch(e){ /* erreur réseau : on garde l'affichage courant */ }
+}
+
+/* ═══ FILTRES ══════════════════════════════════════════════ */
+function setFilter(f,btn){
+  currentFilter=f; customFrom=null; customTo=null;
+  document.getElementById('date-from').value='';
+  document.getElementById('date-to').value='';
+  document.querySelectorAll('.filt-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  render();
+}
+function applyCustom(){
+  const f=document.getElementById('date-from').value;
+  const t=document.getElementById('date-to').value;
+  if(!f&&!t){ return; }
+  customFrom=f?new Date(f+'T00:00:00'):null;
+  customTo=t?new Date(t+'T23:59:59'):null;
+  currentFilter='custom';
+  document.querySelectorAll('.filt-btn').forEach(b=>b.classList.remove('active'));
+  render();
+}
+function filterTx(txs){
+  const now=new Date();
+  return txs.filter(tx=>{
+    const d=new Date(tx.date);
+    if(currentFilter==='today') return d.toDateString()===now.toDateString();
+    if(currentFilter==='week'){const wk=new Date(now);wk.setDate(now.getDate()-7);return d>=wk;}
+    if(currentFilter==='month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    if(currentFilter==='custom'){
+      if(customFrom&&d<customFrom) return false;
+      if(customTo&&d>customTo) return false;
+      return true;
+    }
+    return true; // all
+  });
+}
+
+/* ═══ RENDU ════════════════════════════════════════════════ */
+function render(){
+  const txs=filterTx(allTx);
+  const ca=txs.reduce((s,t)=>s+(t.total||0),0);
+  const avg=txs.length?Math.round(ca/txs.length):0;
+  const nbPrest=txs.reduce((s,t)=>s+((t.items||[]).reduce((x,i)=>x+(i.qty||0),0)),0);
+
+  // CA par caissier
+  const caisMap={};
+  txs.forEach(t=>{ const k=t.caissier||'—'; caisMap[k]=(caisMap[k]||0)+(t.total||0); });
+
+  document.getElementById('stats-grid').innerHTML=
+    '<div class="stat-card"><div class="stat-label">Chiffre d\'affaires</div><div class="stat-val">'+fmtS(ca)+'</div><div class="stat-sub">GNF</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-val">'+txs.length+'</div><div class="stat-sub">reçus</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Panier moyen</div><div class="stat-val">'+fmtS(avg)+'</div><div class="stat-sub">GNF</div></div>'+
+    '<div class="stat-card"><div class="stat-label">Prestations</div><div class="stat-val">'+nbPrest+'</div><div class="stat-sub">vendues</div></div>'+
+    Object.entries(caisMap).map(([k,v])=>'<div class="stat-card"><div class="stat-label" style="color:var(--blue)">CA — '+esc(k)+'</div><div class="stat-val" style="font-size:18px">'+fmtS(v)+'</div><div class="stat-sub">GNF</div></div>').join('');
+
+  // Top 7 services
+  const svcMap={};
+  txs.forEach(t=>(t.items||[]).forEach(i=>{
+    if(!svcMap[i.name])svcMap[i.name]={cnt:0,rev:0};
+    svcMap[i.name].cnt+=(i.qty||0); svcMap[i.name].rev+=(i.price||0)*(i.qty||0);
+  }));
+  const top=Object.entries(svcMap).sort((a,b)=>b[1].rev-a[1].rev).slice(0,7);
+  document.getElementById('top-services').innerHTML=top.length
+    ?'<table><thead><tr><th>#</th><th>Service</th><th class="r">Qté</th><th class="r">Revenu GNF</th></tr></thead><tbody>'+
+      top.map(([name,d],i)=>'<tr><td><span class="rank">'+(i+1)+'</span></td><td>'+esc(name)+'</td><td class="r">'+d.cnt+'×</td><td class="r">'+fmtS(d.rev)+'</td></tr>').join('')+
+      '</tbody></table>'
+    :'<div class="empty">Aucune donnée pour cette période</div>';
+
+  // 50 dernières transactions (déjà triées récent → ancien)
+  const rows=txs.slice(0,50);
+  document.getElementById('tx-table').innerHTML=rows.length
+    ?'<table><thead><tr><th>Reçu</th><th>Date</th><th>Heure</th><th>Cliente</th><th>Services</th><th class="r">Montant</th><th>Paiement</th><th>Caissier</th></tr></thead><tbody>'+
+      rows.map(t=>{
+        const d=new Date(t.date);
+        return '<tr>'+
+          '<td>'+esc(t.num)+'</td>'+
+          '<td>'+d.toLocaleDateString('fr-FR')+'</td>'+
+          '<td>'+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</td>'+
+          '<td>'+esc(t.client_nom||'Cliente')+'</td>'+
+          '<td class="cell-services">'+esc((t.items||[]).map(i=>(i.qty>1?i.qty+'× ':'')+i.name).join(', '))+'</td>'+
+          '<td class="r">'+fmtS(t.total)+' GNF</td>'+
+          '<td><span class="pay-badge">'+esc(t.paiement||'')+'</span></td>'+
+          '<td>'+esc(t.caissier||'—')+'</td>'+
+        '</tr>';
+      }).join('')+
+      '</tbody></table>'
+    :'<div class="empty">Aucune transaction pour cette période</div>';
+}
+
+/* ═══ EXPORT CSV ═══════════════════════════════════════════ */
+function exportCSV(){
+  const txs=filterTx(allTx);
+  const head=['Reçu','Date','Heure','Cliente','Tel','Services','Total GNF','Paiement','Caissier','Note'];
+  const rows=[head];
+  txs.forEach(t=>{
+    const d=new Date(t.date);
+    rows.push([t.num,d.toLocaleDateString('fr-FR'),d.toLocaleTimeString('fr-FR'),
+      t.client_nom||'',t.client_tel||'',
+      (t.items||[]).map(i=>(i.qty>1?i.qty+'x ':'')+i.name).join(' | '),
+      t.total,t.paiement||'',t.caissier||'',t.note||'']);
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='ASSPA_dashboard_'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ═══ INIT ═════════════════════════════════════════════════ */
+initLoginScreen();
+// Pré-remplir la config si déjà connue
+(function(){
+  const c=getConfig();
+  if(c){ /* champs masqués tant que config OK */ }
+})();
+</script>
+</body>
+</html>
