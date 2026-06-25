@@ -16,27 +16,47 @@ et stocke ses données localement dans le navigateur via **IndexedDB**.
 - **Dashboard** : chiffre d'affaires, nombre de transactions, panier moyen,
   prestations vendues, CA par caissier, top 7 des services et liste des
   transactions, avec filtres (Aujourd'hui / Cette semaine / Ce mois / Tout).
-- **Gestion** : utilisateurs et codes PIN, sauvegarde/restauration des données
-  (JSON) et réinitialisation.
+- **Gestion** : utilisateurs et codes PIN, paramètres, sauvegarde/restauration
+  des données (JSON) et réinitialisation.
 - **Exports** : **CSV** et **PDF** des transactions de la période filtrée.
+- **Impression thermique** : ticket texte 48 colonnes (rouleau 80 mm) envoyé à
+  l'imprimante via une iframe `@media print` ; impression A4 classique en repli.
+- **Tiroir-caisse** : ouverture automatique à l'impression (commande ESC/POS) ou
+  manuelle (bouton « Ouvrir tiroir » / touche F4), réservée Propriétaire & Adjoint.
 
 ## Profils & accès
 
 L'accès se fait par profil + code PIN. Trois rôles, avec des droits croissants :
 
-| Rôle         | Badge  | Caisse | Dashboard | Gestion | Export CSV/PDF | Réinitialisation |
-| ------------ | ------ | ------ | --------- | ------- | -------------- | ---------------- |
-| Propriétaire | `PROP` | ✓      | ✓         | ✓       | ✓              | ✓                |
-| Adjoint      | `ADJ`  | ✓      | ✓         | —       | ✓              | —                |
-| Caissier     | `CAIS` | ✓      | —         | —       | —              | —                |
+| Rôle         | Badge | Caisse | Dashboard | Gestion | Export CSV/PDF | Réinitialisation |
+| ------------ | ----- | ------ | --------- | ------- | -------------- | ---------------- |
+| Propriétaire | 👑    | ✓      | ✓         | ✓       | ✓              | ✓                |
+| Adjoint      | 🔑    | ✓      | ✓         | —       | ✓              | —                |
+| Caissier     | 💼    | ✓      | —         | —       | —              | —                |
 
 Profils par défaut (à modifier après la première connexion) :
 
-| Profil | PIN |
-|--------|-----|
+| Profil       | PIN    |
+| ------------ | ------ |
 | Propriétaire | `1234` |
-| Adjoint | `5678` |
-| Caissier | `0000` |
+| Adjoint      | `5678` |
+| Caissier     | `0000` |
+
+## Terminal Point de Vente (TPV SAGA)
+
+L'application est optimisée pour un TPV **SAGA All-in-One** sous Windows (écran
+tactile 1024×768, imprimante thermique, tiroir-caisse RJ11) :
+
+- Interface tactile : cibles ≥ 48 px, services ≥ 80 px, polices ≥ 14 px,
+  défilement interne fluide, bouton **Plein écran**.
+- Impression thermique ESC/POS + ouverture automatique du tiroir.
+- **Raccourcis clavier** (clavier AZERTY externe) : `F1` nom cliente ·
+  `F2` enregistrer la vente · `F3` vider le panier · `F4` ouvrir le tiroir ·
+  `F5` plein écran · `F12` panneau d'aide · `Échap` fermer le reçu ·
+  `Entrée` terminer le reçu.
+
+Procédure complète d'installation et de démarrage automatique :
+voir [`LANCEMENT_SAGA.md`](LANCEMENT_SAGA.md).
 
 ## Utilisation
 
@@ -51,7 +71,8 @@ Ouvrir [`AS_SPA_Caisse.html`](AS_SPA_Caisse.html) dans un navigateur récent
 
 ## Données
 
-- Stockage local **IndexedDB** (`AsSpaDB`) : transactions, utilisateurs, compteur de reçus.
+- Stockage local **IndexedDB** (`AsSpaDB`) : transactions, utilisateurs, compteur
+  de reçus et paramètres (ex. `tiroir_auto` pour l'ouverture automatique du tiroir).
 - **Sauvegarde** : export JSON (`ASSPA_backup_AAAA-MM-JJ.json`).
 - **Exports** : `ASSPA_AAAA-MM-JJ.csv` et `ASSPA_rapport_AAAA-MM-JJ.pdf`.
 
