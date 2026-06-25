@@ -277,6 +277,7 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
   <div class="header-right">
     <div class="header-time" id="header-time"></div>
     <div id="sync-badge" class="sync-badge" style="display:none"></div>
+    <div id="vfd-badge" class="sync-badge" style="display:none;color:var(--gray)" title="Afficheur client VFD">🖥 VFD</div>
     <div id="header-badge"></div>
     <button class="btn-fs" onclick="toggleFullscreen()" title="Plein écran (F5)">Plein écran</button>
     <button class="btn-logout" onclick="doLogout()">⏻ Quitter</button>
@@ -396,6 +397,23 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
       </div>
       <button class="btn-primary" style="margin-top:0" onclick="saveSupabaseConfig()">Tester &amp; Enregistrer</button>
       <div id="sb-status" style="font-size:14px;margin-top:10px"></div>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:4px">Afficheur client VFD <span style="font-weight:400;color:var(--gray)">(écran 2×20 caractères)</span></div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:10px">Affiche les prix à la cliente via le port série (Chrome / Edge sur Windows).</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-tool" onclick="connectVFD()">Connecter l'afficheur</button>
+        <button class="btn-tool" id="vfd-disconnect" style="display:none" onclick="disconnectVFD()">Déconnecter</button>
+      </div>
+      <div id="vfd-tests" style="display:none;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-tool" onclick="vfdWelcome()">Test bienvenue</button>
+          <button class="btn-tool" onclick="vfdSend('TOTAL A PAYER','    250.000 GNF     ')">Test total</button>
+          <button class="btn-tool" onclick="vfdTestDefilement()">Test défilement</button>
+        </div>
+      </div>
+      <div id="vfd-status" style="font-size:14px;margin-top:10px"></div>
     </div>
   </div>
 
@@ -661,6 +679,7 @@ async function doLogin(){
   applyRoleUI();
   renderCatTabs();renderServices();renderPanier();
   updateClock();setInterval(updateClock,30000);
+  vfdWelcome();vfdResetIdle();   // afficheur client : message de bienvenue
 }
 
 function doLogout(){
@@ -671,6 +690,7 @@ function doLogout(){
   document.getElementById('login-error').style.display='none';
   populateLoginSelect();
   showView('caisse',document.querySelector('.nav-btn'));
+  vfdClear();   // afficheur client : écran éteint
 }
 
 function applyRoleUI(){
@@ -862,14 +882,21 @@ function addService(id){
   const svc=findService(id);if(!svc)return;
   if(panier[id])panier[id].qty++;else panier[id]={name:svc.name,price:svc.price,qty:1};
   renderServices();renderPanier();
+  vfdCartLine(svc.name,svc.price);   // afficheur client
 }
 function setQty(id,d){
   if(!panier[id])return;
+  const aff=panier[id];
   panier[id].qty+=d;
   if(panier[id].qty<=0)delete panier[id];
   renderServices();renderPanier();
+  vfdCartLine(aff.name,aff.price);   // afficheur client
 }
-function removeItem(id){delete panier[id];renderServices();renderPanier()}
+function removeItem(id){
+  const aff=panier[id];
+  delete panier[id];renderServices();renderPanier();
+  vfdCartLine(aff?aff.name:'',aff?aff.price:0);   // afficheur client
+}
 function totalPanier(){return Object.values(panier).reduce((s,i)=>s+i.price*i.qty,0)}
 function renderPanier(){
   const items=Object.entries(panier);
@@ -952,6 +979,7 @@ function showRecu(tx){
       <button class="btn-sec" onclick="closeRecu()">✓ Terminer</button>
     </div>`;
   document.getElementById('overlay-recu').classList.add('open');
+  vfdSend('TOTAL A PAYER',formatVFD(tx.total));   // afficheur client
 }
 function closeRecu(){
   document.getElementById('overlay-recu').classList.remove('open');
@@ -960,6 +988,9 @@ function closeRecu(){
   renderServices();renderPanier();
   toast('✓ Transaction enregistrée !');
   syncToSupabase();   // push immédiat si en ligne (sinon différé)
+  // afficheur client : remerciement puis retour à l'accueil après 3 s
+  vfdSend('Merci !','A bientot !');
+  setTimeout(vfdWelcome,3000);
 }
 
 /* ═══ DASHBOARD ═════════════════════════════════════════════ */
@@ -1492,6 +1523,119 @@ function startSyncLoop(){
   window.addEventListener('online',syncToSupabase);
 }
 
+/* ═══════════════════════════════════════════════════════════
+   AFFICHEUR CLIENT VFD (Web Serial API — Chrome/Edge Windows)
+   Écran 2 lignes × 20 caractères. Tout est no-op si non connecté,
+   et n'interrompt jamais le flux de caisse (fire-and-forget).
+══════════════════════════════════════════════════════════════ */
+window.vfdPort=null; window.vfdWriter=null; window.vfdConnected=false;
+let vfdIdleTimer=null, vfdVeilleInterval=null, vfdVeilleStep=0;
+
+// ── Formatage ──
+function truncVFD(str,len=20){ return deburr(String(str==null?'':str)).slice(0,len).padEnd(len); }
+function abbrVFD(n){
+  if(n>=1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=1000) return Math.round(n/1000)+'k';
+  return String(n||0);
+}
+function formatVFD(amount){ return (fmtTicket(amount)+' GNF').padStart(20).slice(-20); }
+
+// ── Badge header + visibilité des boutons ──
+function updateVfdBadge(){
+  const el=document.getElementById('vfd-badge');
+  if(el){
+    if(!('serial' in navigator)) el.style.display='none';
+    else { el.style.display=''; el.style.color=window.vfdConnected?'var(--green)':'var(--gray)'; }
+  }
+  const t=document.getElementById('vfd-tests'); if(t) t.style.display=window.vfdConnected?'flex':'none';
+  const d=document.getElementById('vfd-disconnect'); if(d) d.style.display=window.vfdConnected?'':'none';
+}
+
+// ── Envoi (reset ESC @, ligne 1, CR/LF, ligne 2) ──
+async function vfdSend(line1,line2){
+  if(!window.vfdConnected||!window.vfdWriter) return;
+  try{
+    const enc=s=>{ const o=new Uint8Array(20); for(let i=0;i<20;i++){ const c=s.charCodeAt(i); o[i]=(c>=32&&c<127)?c:32; } return o; };
+    const l1=truncVFD(line1), l2=truncVFD(line2);
+    const bytes=new Uint8Array(2+20+2+20);
+    bytes.set([0x1B,0x40],0);    // ESC @ : reset / clear
+    bytes.set(enc(l1),2);
+    bytes.set([0x0D,0x0A],22);   // CR LF : passage ligne 2 (ESC 'l' selon modèle)
+    bytes.set(enc(l2),24);
+    await window.vfdWriter.write(bytes);
+  }catch(e){ window.vfdConnected=false; updateVfdBadge(); }
+}
+async function vfdClear(){
+  if(!window.vfdConnected||!window.vfdWriter) return;
+  try{ await window.vfdWriter.write(new Uint8Array([0x1B,0x40])); }
+  catch(e){ window.vfdConnected=false; updateVfdBadge(); }
+}
+function vfdWelcome(){ vfdSend('*** AS SPA ***','Bienvenue !'); }
+
+// ── Ligne panier : service + prix + total abrégé ──
+function vfdCartLine(name,price){
+  if(!Object.keys(panier).length){ vfdSend('Panier vide','Total : 0 GNF'); return; }
+  vfdSend(name, fmtTicket(price||0)+'  Tot:'+abbrVFD(totalPanier()));
+}
+
+// ── Connexion / déconnexion ──
+async function connectVFD(){
+  const st=document.getElementById('vfd-status');
+  if(!('serial' in navigator)){ if(st){st.textContent='⚠ Nécessite Chrome ou Edge sur Windows';st.style.color='var(--red)';} return; }
+  try{
+    const port=await navigator.serial.requestPort();
+    try{ if(port.readable||port.writable) await port.close(); }catch(_){}   // port déjà ouvert
+    await port.open({baudRate:9600,dataBits:8,stopBits:1,parity:'none'});
+    window.vfdPort=port;
+    window.vfdWriter=port.writable.getWriter();
+    window.vfdConnected=true;
+    updateVfdBadge();
+    if(st){ st.textContent='✓ Afficheur connecté'; st.style.color='var(--green)'; }
+    vfdWelcome(); vfdResetIdle();
+  }catch(e){
+    window.vfdConnected=false; updateVfdBadge();
+    if(st){ st.textContent='⚠ '+((e&&e.message)||'Connexion impossible'); st.style.color='var(--red)'; }
+  }
+}
+async function disconnectVFD(){
+  try{
+    await vfdClear();
+    if(window.vfdWriter){ try{window.vfdWriter.releaseLock();}catch(_){}; window.vfdWriter=null; }
+    if(window.vfdPort){ await window.vfdPort.close(); window.vfdPort=null; }
+  }catch(e){}
+  window.vfdConnected=false;
+  if(vfdIdleTimer) clearTimeout(vfdIdleTimer);
+  if(vfdVeilleInterval){ clearInterval(vfdVeilleInterval); vfdVeilleInterval=null; }
+  updateVfdBadge();
+  const st=document.getElementById('vfd-status'); if(st){ st.textContent='Afficheur déconnecté.'; st.style.color='var(--gray)'; }
+}
+
+// ── Mode veille : 2 écrans alternés toutes les 4 s après 5 min d'inactivité ──
+function vfdStartVeille(){
+  if(!window.vfdConnected||vfdVeilleInterval) return;
+  vfdVeilleStep=0;
+  const frame=()=>{
+    if(vfdVeilleStep%2===0) vfdSend('*** AS SPA ***','Institut de beaute');
+    else vfdSend('RATOMA - Mariador','Tel: 623 606 098');
+    vfdVeilleStep++;
+  };
+  frame();
+  vfdVeilleInterval=setInterval(frame,4000);
+}
+function vfdResetIdle(){
+  const wasVeille=!!vfdVeilleInterval;
+  if(vfdVeilleInterval){ clearInterval(vfdVeilleInterval); vfdVeilleInterval=null; }
+  if(vfdIdleTimer) clearTimeout(vfdIdleTimer);
+  if(wasVeille) vfdWelcome();   // réveil → écran d'accueil
+  vfdIdleTimer=setTimeout(vfdStartVeille,300000);
+}
+function vfdTestDefilement(){
+  vfdStartVeille();
+  setTimeout(()=>{ if(vfdVeilleInterval){ clearInterval(vfdVeilleInterval); vfdVeilleInterval=null; } vfdWelcome(); },10000);
+}
+// Toute interaction réveille l'afficheur et réarme le minuteur de veille
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev,vfdResetIdle));
+
 /* ═══ INIT ══════════════════════════════════════════════════ */
 openDB().then(async()=>{
   await ensureDefaultUsers();
@@ -1499,6 +1643,7 @@ openDB().then(async()=>{
   await initSupabase();
   await populateLoginSelect();
   startSyncLoop();
+  updateVfdBadge();   // badge VFD (gris) si Web Serial dispo
 });
 </script>
 </body>
