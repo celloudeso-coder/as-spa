@@ -89,7 +89,7 @@ powercfg /change hibernate-timeout-dc 0
 powercfg /hibernate off
 ```
 
-Désactiver l'économiseur d'écran :
+Désactiver l'économiseur d'écran : 
 **Paramètres → Personnalisation → Écran de verrouillage → Écran de veille →
 « (Aucun) »**.
 
