@@ -220,6 +220,18 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
 .section-add{background:var(--gold-bg);border:1.5px dashed var(--gold);border-radius:12px;padding:16px;margin-bottom:14px}
 .section-add-title{font-size:14px;font-weight:700;color:var(--brown);margin-bottom:12px}
 
+/* ── TARIFS ──────────────────────────────────────────────── */
+.tarif-table{width:100%;border-collapse:collapse}
+.tarif-table th{text-align:left;font-size:13px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding:9px 10px;border-bottom:2px solid var(--gold);white-space:nowrap}
+.tarif-table td{padding:9px 10px;border-bottom:1px solid var(--border);font-size:14px;vertical-align:top}
+.tarif-table tr:last-child td{border-bottom:none}
+.tarif-orig{color:var(--gray);white-space:nowrap}
+.tarif-input{width:150px;min-height:44px;padding:8px 10px;border:1.5px solid var(--border);border-radius:9px;font-size:14px;color:var(--ink);background:#fff}
+.tarif-input.modif{border-color:var(--gold);background:var(--gold-bg)}
+.tarif-input.invalid{border-color:var(--red)}
+.tarif-err{color:var(--red);font-size:12px;margin-top:4px}
+.btn-sm-gold:disabled{opacity:.45;cursor:default}
+
 /* ── MODAL GÉNÉRIQUE ─────────────────────────────────────── */
 .modal-title{font-family:var(--font);font-size:17px;color:var(--brown);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
 
@@ -288,6 +300,7 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
 <div class="nav" id="main-nav">
   <button class="nav-btn active" onclick="showView('caisse',this)">🧾 Caisse</button>
   <button class="nav-btn" id="nav-dashboard" onclick="showView('dashboard',this)">📊 Dashboard</button>
+  <button class="nav-btn" id="nav-tarifs" onclick="showView('tarifs',this)">🏷 Tarifs</button>
   <button class="nav-btn" id="nav-gestion" onclick="showView('gestion',this)">⚙️ Gestion</button>
 </div>
 
@@ -352,6 +365,16 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
       <button onclick="exportCSV()" style="min-height:48px;padding:10px 22px;border-radius:20px;border:1.5px solid var(--gold);background:var(--gold-pale);color:var(--brown);font-size:14px;font-weight:700">↓ Exporter CSV</button>
       <button onclick="exportPDF()" style="min-height:48px;padding:10px 22px;border-radius:20px;border:1.5px solid var(--gold);background:var(--gold);color:#fff;font-size:14px;font-weight:700">Exporter PDF</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ VUE TARIFS (Propriétaire) ═══════════════════════════ -->
+<div class="view" id="view-tarifs">
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Tarifs des services</div>
+    <p style="font-size:14px;color:var(--gray);margin-bottom:12px">Les prix d'origine ne sont jamais perdus. Une modification ne change que les ventes futures (les transactions passées gardent leur prix d'alors).</p>
+    <div class="cat-tabs" id="tarif-cats"></div>
+    <div style="overflow-x:auto" id="tarif-list"></div>
   </div>
 </div>
 
@@ -467,9 +490,12 @@ input,select,textarea{font-family:var(--mono);outline:none;font-size:14px}
 
 <script>
 /* ═══════════════════════════════════════════════════════════
-   CATALOGUE
+   CATALOGUE_BASE — source de vérité IMMUABLE des prix d'origine.
+   Les prix personnalisés vivent dans IndexedDB (store 'prix_custom')
+   via window.PRIX_CUSTOM ; CATALOGUE_BASE n'est jamais réécrit, ce qui
+   garantit un repli sûr même en cas de corruption IndexedDB.
 ══════════════════════════════════════════════════════════════ */
-const CATALOGUE={
+const CATALOGUE_BASE={
   "Pédicure & Manucure":[
     {id:"pm1",name:"Pédicure simple",price:100000},
     {id:"pm2",name:"Manucure simple",price:70000},
@@ -551,7 +577,8 @@ const CATALOGUE={
     {id:"ha5",name:"Gants",price:100000},
   ],
 };
-const CATS=Object.keys(CATALOGUE);
+const CATS=Object.keys(CATALOGUE_BASE);
+window.PRIX_CUSTOM={};   // {serviceId:{price}} — surcharges chargées depuis IndexedDB
 
 /* ═══ ROLES ════════════════════════════════════════════════ */
 const ROLES={
@@ -577,7 +604,7 @@ let tiroirAuto=true;        // ouverture tiroir auto à l'impression (réglage)
 let db;
 function openDB(){
   return new Promise((res,rej)=>{
-    const req=indexedDB.open('AsSpaDB',3);
+    const req=indexedDB.open('AsSpaDB',4);
     req.onupgradeneeded=e=>{
       const d=e.target.result;
       if(!d.objectStoreNames.contains('transactions'))
@@ -589,6 +616,9 @@ function openDB(){
       // v3 : file d'attente de synchronisation Supabase (push différé)
       if(!d.objectStoreNames.contains('sync_queue'))
         d.createObjectStore('sync_queue',{keyPath:'id',autoIncrement:true});
+      // v4 : prix personnalisés (surcharges du CATALOGUE_BASE), id = id du service
+      if(!d.objectStoreNames.contains('prix_custom'))
+        d.createObjectStore('prix_custom',{keyPath:'id'});
     };
     req.onsuccess=e=>{db=e.target.result;res(db)};
     req.onerror=()=>rej(req.error);
@@ -702,6 +732,7 @@ function applyRoleUI(){
   // Nav visibility
   document.getElementById('nav-dashboard').style.display=r.canDash?'':'none';
   document.getElementById('nav-gestion').style.display=(currentUser.role==='proprietaire')?'':'none';
+  document.getElementById('nav-tarifs').style.display=(currentUser.role==='proprietaire')?'':'none';
   // Bouton "Ouvrir tiroir" réservé Propriétaire & Adjoint
   document.getElementById('caisse-tools').style.display=(currentUser.role!=='caissier')?'block':'none';
 }
@@ -786,7 +817,8 @@ function confirmReset(){
 async function exportBackup(){
   const txs=await dbGetAll('transactions');
   const users=await dbGetAll('users');
-  const blob=new Blob([JSON.stringify({txs,users,exportDate:new Date().toISOString()},null,2)],
+  const prixCustom=await dbGetAll('prix_custom');
+  const blob=new Blob([JSON.stringify({txs,users,prixCustom,exportDate:new Date().toISOString()},null,2)],
     {type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
@@ -809,6 +841,12 @@ async function importBackup(e){
           await dbClear('users');
           for(const u of data.users){await dbPut('users',u);}
           await populateLoginSelect();
+        }
+        if(data.prixCustom){
+          await dbClear('prix_custom');
+          for(const p of data.prixCustom){await dbPut('prix_custom',p);}
+          await loadPrixCustom();
+          renderServices();
         }
         toast('✓ Sauvegarde restaurée');
         renderDashboard();
@@ -837,12 +875,14 @@ function showView(v,btn){
   const r=ROLES[currentUser?.role||'caissier'];
   if(v==='dashboard'&&!r.canDash){toast('⚠ Accès refusé');return;}
   if(v==='gestion'&&currentUser?.role!=='proprietaire'){toast('⚠ Accès réservé au Propriétaire');return;}
+  if(v==='tarifs'&&currentUser?.role!=='proprietaire'){toast('⚠ Accès réservé au Propriétaire');return;}
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   if(btn) btn.classList.add('active');
   if(v==='dashboard') renderDashboard();
   if(v==='gestion'){ renderUserList(); syncSettingsUI(); }
+  if(v==='tarifs') renderTarifs();
 }
 
 /* ═══ CONFIRM ═══════════════════════════════════════════════ */
@@ -862,19 +902,126 @@ function renderCatTabs(){
     CATS.map(c=>`<button class="cat-tab${c===currentCat?' active':''}" onclick="selectCat('${c}')">${c}</button>`).join('');
 }
 function selectCat(c){currentCat=c;renderCatTabs();renderServices()}
+function findServiceBase(id){
+  for(const cat of Object.values(CATALOGUE_BASE)){const f=cat.find(s=>s.id===id);if(f)return f;}return null;
+}
+// Prix effectif : surcharge custom si présente, sinon prix de base
+function getPrice(serviceId){
+  return window.PRIX_CUSTOM[serviceId]?.price ?? findServiceBase(serviceId)?.price;
+}
+// Service avec son prix EFFECTIF — utilisé par le panier, le reçu, les stats
 function findService(id){
-  for(const cat of Object.values(CATALOGUE)){const f=cat.find(s=>s.id===id);if(f)return f;}return null;
+  const base=findServiceBase(id);
+  if(!base) return null;
+  return {...base, price:getPrice(id)};
 }
 function renderServices(){
   document.getElementById('services-grid').innerHTML=
-    CATALOGUE[currentCat].map(s=>{
+    CATALOGUE_BASE[currentCat].map(s=>{
       const qty=panier[s.id]?.qty||0;
+      const custom=!!window.PRIX_CUSTOM[s.id];
+      const price=getPrice(s.id);
       return `<button class="svc-btn${qty>0?' added':''}" onclick="addService('${s.id}')">
         <span class="svc-badge">${qty}</span>
         <span class="svc-name">${s.name}</span>
-        <span class="svc-price">${fmtS(s.price)} GNF</span>
+        <span class="svc-price"${custom?' style="color:var(--brown)" title="Prix modifié"':''}>${fmtS(price)} GNF${custom?' ✦':''}</span>
       </button>`;
     }).join('');
+}
+
+/* ═══ TARIFS (prix personnalisés — Propriétaire) ═══════════ */
+let tarifCat=CATS[0];
+
+async function loadPrixCustom(){
+  const all=await dbGetAll('prix_custom');
+  window.PRIX_CUSTOM={};
+  (all||[]).forEach(p=>{ window.PRIX_CUSTOM[p.id]={price:p.price}; });
+}
+
+// Validation stricte : entier, > 0, <= 10 000 000 ; '' si valide
+function priceError(v){
+  const s=String(v).trim();
+  if(s==='') return 'Prix requis';
+  if(!/^\d+$/.test(s)) return 'Entier uniquement (pas de décimale)';
+  const n=parseInt(s,10);
+  if(!(n>0)) return 'Doit être supérieur à 0';
+  if(n>10000000) return 'Maximum 10 000 000 GNF';
+  return '';
+}
+
+function selectTarifCat(c){ tarifCat=c; renderTarifs(); }
+
+function renderTarifs(){
+  const tabs=document.getElementById('tarif-cats');
+  if(tabs) tabs.innerHTML=CATS.map(c=>`<button class="cat-tab${c===tarifCat?' active':''}" onclick="selectTarifCat('${c}')">${c}</button>`).join('');
+  const body=document.getElementById('tarif-list');
+  if(!body) return;
+  body.innerHTML='<table class="tarif-table"><thead><tr><th>Service</th><th>Prix d\'origine</th><th>Prix actuel</th><th>Action</th></tr></thead><tbody>'+
+    CATALOGUE_BASE[tarifCat].map(s=>{
+      const cur=getPrice(s.id);
+      const custom=!!window.PRIX_CUSTOM[s.id];
+      return `<tr>
+        <td>${s.name}</td>
+        <td class="tarif-orig">${fmtS(s.price)} GNF</td>
+        <td>
+          <input class="tarif-input${custom?' modif':''}" id="tarif-input-${s.id}" type="number" inputmode="numeric" min="1" max="10000000" step="1" value="${cur}" oninput="onTarifInput('${s.id}')"/>
+          <span class="tarif-err" id="tarif-err-${s.id}" style="display:none"></span>
+        </td>
+        <td>
+          <button class="btn-sm-gold" id="tarif-save-${s.id}" onclick="askSavePrix('${s.id}')">Modifier</button>
+          ${custom?`<button class="btn-sm" onclick="resetPrix('${s.id}')">Réinitialiser</button>`:''}
+        </td>
+      </tr>`;
+    }).join('')+'</tbody></table>';
+}
+
+// Validation live : bordure (orange si modifié, rouge si invalide) + bouton
+function onTarifInput(id){
+  const inp=document.getElementById('tarif-input-'+id);
+  const err=document.getElementById('tarif-err-'+id);
+  const save=document.getElementById('tarif-save-'+id);
+  if(!inp) return;
+  const msg=priceError(inp.value);
+  const base=findServiceBase(id)?.price;
+  inp.classList.remove('modif','invalid');
+  if(msg){
+    inp.classList.add('invalid');
+    if(err){ err.textContent=msg; err.style.display='block'; }
+    if(save) save.disabled=true;
+  }else{
+    if(err) err.style.display='none';
+    if(parseInt(inp.value,10)!==base) inp.classList.add('modif');
+    if(save) save.disabled=false;
+  }
+}
+
+function askSavePrix(id){
+  const inp=document.getElementById('tarif-input-'+id);
+  if(!inp) return;
+  if(priceError(inp.value)){ onTarifInput(id); return; }
+  const newPrice=parseInt(inp.value,10);
+  const old=getPrice(id);
+  const name=findServiceBase(id)?.name||id;
+  if(newPrice===old){ toast('Aucun changement'); return; }
+  showConfirm('Modifier le prix ?',`${name} : ${fmtS(old)} → ${fmtS(newPrice)} GNF ?`,()=>savePrix(id,newPrice));
+}
+
+async function savePrix(serviceId,newPrice){
+  if(priceError(newPrice)){ toast('⚠ Prix invalide'); return; }
+  newPrice=parseInt(newPrice,10);
+  await dbPut('prix_custom',{id:serviceId,price:newPrice});
+  window.PRIX_CUSTOM[serviceId]={price:newPrice};
+  renderTarifs();
+  renderServices();
+  toast('✓ Prix mis à jour');
+}
+
+async function resetPrix(serviceId){
+  await dbDelete('prix_custom',serviceId);
+  delete window.PRIX_CUSTOM[serviceId];
+  renderTarifs();
+  renderServices();
+  toast("✓ Prix réinitialisé au tarif d'origine");
 }
 
 /* ═══ PANIER ════════════════════════════════════════════════ */
@@ -1640,6 +1787,7 @@ function vfdTestDefilement(){
 openDB().then(async()=>{
   await ensureDefaultUsers();
   await loadSettings();
+  await loadPrixCustom();   // prix personnalisés avant tout rendu de services
   await initSupabase();
   await populateLoginSelect();
   startSyncLoop();
